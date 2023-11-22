@@ -1,0 +1,43 @@
+{
+  "version": "2.1.0",
+  "$schema": "https://schemastore.azurewebsites.net/schemas/json/sarif-2.1.0-rtm.5.json",
+  "runs": [
+    {
+      "results": [],
+      "tool": {
+        "driver": {
+          "name": "PREfast",
+          "fullName": "PREfast Code Analysis",
+          "version": "14.36.32532.0",
+          "informationUri": "https://aka.ms/cpp/ca"
+        }
+      },
+      "invocations": [
+        {
+          "executionSuccessful": true
+        }
+      ],
+      "artifacts": [
+        {
+          "location": {
+            "uri": "file:///c:/users/dimon/onedrive/рабочий стол/study/универ/курс 3/семестр 5/сп/курсач/kursachsemest5v2.0/kursachsemest5v2.0/package.cpp"
+          },
+          "roles": [
+            "analysisTarget"
+          ],
+          "hashes": {
+            "sha-256": "7bad556aa5f58597630ef93b0d90f24f52355b75f571f4a10ee6b0c2ad99d7f6"
+          }
+        },
+        {
+          "location": {
+            "uri": "file:///c:/users/dimon/onedrive/рабочий стол/study/универ/курс 3/семестр 5/сп/курсач/kursachsemest5v2.0/kursachsemest5v2.0/package.h"
+          },
+          "hashes": {
+            "sha-256": "da69509c76f9ffd77ff56d6e634bd12f00e52d9c4068844c64c9a38e0bf26cf5"
+          }
+        }
+      ]
+    }
+  ]
+}
