@@ -1,0 +1,3 @@
+﻿  Source.cpp
+C:\Users\dimon\OneDrive\Рабочий стол\Study\Универ\Курс 3\Семестр 5\СП\Курсач\Tests\Tests\Source.cpp(430,19): warning C4267: =: преобразование из "size_t" в "int"; возможна потеря данных
+  Tests.vcxproj -> C:\Users\dimon\OneDrive\Рабочий стол\Study\Универ\Курс 3\Семестр 5\СП\Курсач\Tests\x64\Debug\Tests.exe
