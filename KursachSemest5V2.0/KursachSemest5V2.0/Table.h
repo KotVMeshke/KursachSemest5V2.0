@@ -1,11 +1,12 @@
+#pragma once
 #define _CRT_SECURE_NO_WARNINGS
 
 #include <Windows.h>
 #include <CommCtrl.h>
 #include <tchar.h>
+#include <string>
 #include <exception>
 
-#pragma once
 class Table
 {
 private:
@@ -18,18 +19,17 @@ private:
 	double* colum_width;
 	int min_list_width;
 
-	bool InsertOneValue(char* element, int element_position, int row_number);
+	bool InsertOneValue(char*,int,int);
 public:
+	LONG_PTR oldListViewProc;
+
 	Table();
 	~Table();
-	HWND CreateListView(HWND parent_window, HMENU table_id, RECT list_size, int min_list_width);
-	bool AddNewColum(char* text, int colum_number, int culum_width = 100);
-	bool InsertNewRow(char* values, int row_number);
-	bool InsertNewRow(char* values);
-	bool ResizeTable(RECT window_size);
-	
-	
-
-	
+	HWND CreateListView(HWND, HMENU, RECT,int,LONG_PTR);
+	bool AddNewColum(char*,int,int);
+	bool InsertNewRow(char*,int);
+	bool InsertNewRow(char*);
+	bool ResizeTable(RECT);
+	void ClearTable();
 };
 

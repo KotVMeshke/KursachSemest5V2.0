@@ -1,3 +1,4 @@
+#pragma once
 #define _WINSOCK_DEPRECATED_NO_WARNINGS
 #define _CRT_SECURE_NO_WARNINGS
 #include "stdio.h"
@@ -27,13 +28,25 @@ LARGE_INTEGER start;
 LARGE_INTEGER end;
 double elapsedSeconds;
 char* str;
-
 IPV4_HDR* iphdr;
 TCP_HDR* tcpheader;
 UDP_HDR* udpheader;
 ICMP_HDR* icmpheader;
+hostent GetLocalInterfaces()
+{
+	struct hostent* local;
+	WSADATA wsa;
+	char hostname[100];
+	WSAStartup(MAKEWORD(2, 2), &wsa);
+	gethostname(hostname, sizeof(hostname));
+	local = gethostbyname(hostname);
+	WSACleanup();
+	return *local;
+}
 
-void PrepareForSniffing(SOCKET* sniffer)
+
+
+void PrepareForSniffing(SOCKET* sniffer,int InterfaceNumber)
 {
 	struct in_addr addr;
 	int in;
@@ -43,81 +56,69 @@ void PrepareForSniffing(SOCKET* sniffer)
 	WSADATA wsa;
 
 	QueryPerformanceFrequency(&frequency);
-	//logfile = fopen("log1.txt", "w");
-	logfile.open("logFull.txt", std::ios::app); // Открытие файла для записи (ios::app для добавления в конец)
-	if (!logfile.is_open())
-	{
-		//printf("Unable to create file.");
-	}
-
-	//logfile2 = fopen("log2.txt", "w");
-	logfile2.open("logShort.txt", std::ios::app); // Открытие файла для записи (ios::app для добавления в конец)
-	if (!logfile2.is_open())
-	{
-		//printf("Unable to create file.");
-	}
-
-	//printf("\nInitialising Winsock...");
+	printf("\nInitialising Winsock...");
 	if (WSAStartup(MAKEWORD(2, 2), &wsa) != 0)
 	{
 		printf("WSAStartup() failed.\n");
+		return;
 	}
-	//printf("Initialised");
+	printf("Initialised");
 
-	//printf("\nCreating RAW Socket...");
+	printf("\nCreating RAW Socket...");
 	*sniffer = socket(AF_INET, SOCK_RAW, IPPROTO_IP);
 	if (*sniffer == INVALID_SOCKET)
 	{
 		printf("Failed to create raw socket.\n");
+		return;
 	}
-	//printf("Created.");
+	printf("Created.");
 
 	if (gethostname(hostname, sizeof(hostname)) == SOCKET_ERROR)
 	{
 		printf("Error : %d", WSAGetLastError());
+		return;
 	}
-	//printf("\nHost name : %s \n", hostname);
+	printf("\nHost name : %s \n", hostname);
 
 	local = gethostbyname(hostname);
-	//printf("\nAvailable Network Interfaces : \n");
+	printf("\nAvailable Network Interfaces : \n");
 	if (local == NULL)
 	{
 		printf("Error : %d.\n", WSAGetLastError());
+		return ;
 	}
 
 	for (i = 0; local->h_addr_list[i] != 0; ++i)
 	{
 		memcpy(&addr, local->h_addr_list[i], sizeof(struct in_addr));
-		//printf("Interface Number : %d Address : %s\n", i, inet_ntoa(addr));
+		printf("Interface Number : %d Address : %s\n", i, inet_ntoa(addr));
 	}
 
-	//printf("Enter the interface number you would like to sniff : ");
-	//scanf("%d", &in);
-	in = 3;
+	printf("Enter the interface number you would like to sniff : ");
 	memset(&dest, 0, sizeof(dest));
-	memcpy(&dest.sin_addr.s_addr, local->h_addr_list[in], sizeof(dest.sin_addr.s_addr));
+	memcpy(&dest.sin_addr.s_addr, local->h_addr_list[InterfaceNumber], sizeof(dest.sin_addr.s_addr));
 	dest.sin_family = AF_INET;
 	dest.sin_port = 0;
 
-	//printf("\nBinding socket to local system and port 0 ...");
+	printf("\nBinding socket to local system and port 0 ...");
 	if (bind(*sniffer, (struct sockaddr*)&dest, sizeof(dest)) == SOCKET_ERROR)
 	{
 		printf("bind(%s) failed.\n", inet_ntoa(addr));
+		return;
 	}
-	//printf("Binding successful");
+	printf("Binding successful");
 
 	j = 1;
-	//printf("\nSetting socket to sniff...");
+	printf("\nSetting socket to sniff...");
 	if (WSAIoctl(*sniffer, SIO_RCVALL, &j, sizeof(j), 0, 0, (LPDWORD)&in, 0, 0) == SOCKET_ERROR)
 	{
 		printf("WSAIoctl() failed.\n");
+		return;
 	}
-	/*printf("Socket set.");
+	printf("Socket set.");
 
 	printf("\nStarted Sniffing\n");
-	printf("Packet Capture Statistics...\n");*/
-	
-
+	printf("Packet Capture Statistics...\n");
 	
 
 }
@@ -152,16 +153,17 @@ void StartSniffing(SOCKET sniffer, char* Buffer)
 	free(Buffer);
 }
 
-std::string SniffOnePackeg(SOCKET Sock, char* Buffer)
+std::string SniffOnePackeg(SOCKET Sock, char* Buffer, std::string* fullData)
 {
 	int mangobyte = 0;
 	std::string shortData;
 	mangobyte = recvfrom(Sock, Buffer, 65536, 0, 0, 0);
-
 	if (mangobyte > 0)
 	{
-		number_of_packege++;
 		//ProcessPacket(Buffer, mangobyte);
+		*fullData = std::string(Buffer,mangobyte);
+
+		//*fullData = std::to_string(reinterpret_cast<char>(Buffer));
 		shortData = GetShortData(Buffer, mangobyte);
 
 	}
@@ -277,8 +279,12 @@ char* GetNameByNumber(unsigned int protocol)
 	return str;
 }
 
+
+
 std::string GetShortData(char* buffer, unsigned int size)
 {
+	number_of_packege++;
+
 	std::string shortData = "";
 	iphdr = (IPV4_HDR*)buffer;
 	if (number_of_packege == 1)
@@ -286,6 +292,7 @@ std::string GetShortData(char* buffer, unsigned int size)
 		QueryPerformanceCounter(&start);
 		double elapsedSeconds = 0;
 	}
+
 	QueryPerformanceCounter(&end);
 	double elapsedSeconds = static_cast<double>(end.QuadPart - start.QuadPart) / frequency.QuadPart;
 	memset(&source, 0, sizeof(source));
@@ -308,14 +315,7 @@ std::string GetShortData(char* buffer, unsigned int size)
 	shortData.append(GetNameByNumber((unsigned int)iphdr->ip_protocol));
 	shortData.append(",");
 	shortData.append(std::to_string(ntohs(iphdr->ip_total_length)));
-	/*if (logfile2.is_open()) 
-	{
-		logfile2 << std::setw(8) << number_of_packege << "| " << std::setw(8) << std::fixed << std::setprecision(6) << elapsedSeconds << "| "
-			<< std::setw(15) << source_addr << "| " << std::setw(15) << dest_addr << "| " << std::setw(6) << GetNameByNumber((unsigned int)iphdr->ip_protocol)
-			<< "| " << std::setw(6) << ntohs(iphdr->ip_total_length) << std::endl;
-		logfile2 << std::setw(15) << inet_ntoa(source.sin_addr) << std::endl;
-		logfile2 << std::setw(15) << inet_ntoa(dest.sin_addr) << std::endl;
-	}*/
+	
 	return shortData;
 }
 
@@ -410,7 +410,7 @@ void PrintShortData(char* buffer, unsigned int size)
 //	fprintf(logfile, "IP Header\n");
 //
 //	PrintData(Buffer, iphdrlen);
-//
+//sdfsfdfsdfsd
 //	fprintf(logfile, "UDP Header\n");
 //
 //	PrintData(Buffer + iphdrlen, sizeof(UDP_HDR));

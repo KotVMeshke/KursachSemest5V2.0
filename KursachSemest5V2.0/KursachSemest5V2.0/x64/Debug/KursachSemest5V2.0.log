@@ -1,6 +1,4 @@
 ﻿  main.cpp
-  Sniffing.cpp
-  Table.cpp
-C:\Users\dimon\OneDrive\Рабочий стол\Study\Универ\Курс 3\Семестр 5\СП\Курсач\KursachSemest5V2.0\KursachSemest5V2.0\Table.cpp(192,27): warning C4244: +=: преобразование "double" в "int", возможна потеря данных
-  Создание кода...
+C:\Users\dimon\OneDrive\Рабочий стол\Study\Универ\Курс 3\Семестр 5\СП\Курсач\KursachSemest5V2.0\KursachSemest5V2.0\DataWindowActions.h(169,38): warning C4244: аргумент: преобразование "LPARAM" в "int", возможна потеря данных
+C:\Users\dimon\OneDrive\Рабочий стол\Study\Универ\Курс 3\Семестр 5\СП\Курсач\KursachSemest5V2.0\KursachSemest5V2.0\main.cpp(87,65): warning C4267: аргумент: преобразование из "size_t" в "unsigned int"; возможна потеря данных
   KursachSemest5V2.0.vcxproj -> C:\Users\dimon\OneDrive\Рабочий стол\Study\Универ\Курс 3\Семестр 5\СП\Курсач\KursachSemest5V2.0\x64\Debug\KursachSemest5V2.0.exe

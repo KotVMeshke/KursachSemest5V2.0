@@ -1,71 +1,45 @@
+#define _WINSOCK_DEPRECATED_NO_WARNINGS
 #define _CRT_SECURE_NO_WARNINGS
+
 #include "functionsHeaders.h"
+#include "Interface.h"
 #include <Windows.h>
 #include <CommCtrl.h>
 #include "commctrl.h"
+#include <fstream>
 #include <tchar.h>
 
-#include "definesHeader.h"
+#include "DataWindowActions.h"
+#include "StartWindowActions.h"
 
-#include "Table.h"
+HWND StartWindow;
+HWND TableWindow;
 
-HWND hwndList;
-HINSTANCE hInst;
-Table table;
-SOCKET sniffer;
-int nCmd;
-bool test = true;
-DWORD threadId;
-HANDLE hThread;
-HMENU menuList[3];
-char* Buffer;
-LPCTSTR fileManager = L"explorer.exe";
-LPCTSTR folder = L".\\";
+
 DWORD WINAPI Sniffing(LPVOID lpParam)
 {
-	Table* table = static_cast<Table*>(lpParam);
-	char* Buffer = (char*)malloc(65536*sizeof(char));
-	
-	while (test) 
+	Table* DataTable = static_cast<Table*>(lpParam);
+	char* Buffer = (char*)malloc(65536 * sizeof(char));
+	std::string fullData;
+
+	while (SniffingRule)
 	{
-		std::string data = SniffOnePackeg(sniffer, Buffer);
-		/*if (data != "")*/
-			table->InsertNewRow(const_cast<char*>(data.c_str()));
+		std::string data = SniffOnePackeg(sniffer, Buffer, &fullData);
+		DataTable->InsertNewRow(const_cast<char*>(data.c_str()));
+		ScannList.push_back(fullData);
 	}
+
 	return 0;
 }
 
-void CALLBACK TimerProc(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime) {
-	if (Buffer == nullptr)
-		Buffer = (char*)malloc(65536);
-
-	std::string data = SniffOnePackeg(sniffer, Buffer);
-	if (data != "")
-		table.InsertNewRow(const_cast<char*>(data.c_str()));
-	//free(str1);
-
-
-}
-LRESULT CALLBACK WndProc(
-	HWND   hWnd,
-	UINT   message,
-	WPARAM wParam,
-	LPARAM lParam
-);
-
-int WINAPI WinMain(
-	_In_ HINSTANCE hInstance,
-	_In_opt_ HINSTANCE hPrevInstance,
-	_In_ LPSTR     lpCmdLine,
-	_In_ int       nCmdShow
-)
+int WINAPI WinMain(_In_ HINSTANCE hInstance,_In_opt_ HINSTANCE hPrevInstance,_In_ LPSTR lpCmdLine,_In_ int nCmdShow)
 {
-	WNDCLASSEX wcex; HWND hWnd; MSG msg;
+	WNDCLASSEX wcex; 
+	MSG msg;
 	hInst = hInstance;
-	nCmd = nCmdShow;
 	wcex.cbSize = sizeof(WNDCLASSEX);
 	wcex.style = CS_DBLCLKS;
-	wcex.lpfnWndProc = WndProc;
+	wcex.lpfnWndProc = WndDataProc;
 	wcex.cbClsExtra = 0;
 	wcex.cbWndExtra = 0;
 	wcex.hInstance = hInstance;
@@ -73,37 +47,18 @@ int WINAPI WinMain(
 	wcex.hCursor = LoadCursor(NULL, IDC_ARROW);
 	wcex.hbrBackground = HBRUSH(CreateSolidBrush(RGB(255, 255, 255)));
 	wcex.lpszMenuName = NULL;
-	wcex.lpszClassName = _T("KursachSemestr5");
+	wcex.lpszClassName = _T("DataWindow");
 	wcex.hIconSm = wcex.hIcon;
 	RegisterClassEx(&wcex);
 
-	hWnd = CreateWindow(_T("KursachSemestr5"), _T("Wireshark 2.0"), WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, CW_USEDEFAULT, DEFAULT_WINDOW_WIDTH, DEFAULT_WINDOW_HEIGHT, NULL, NULL, hInstance, NULL);
+	wcex.lpszClassName = _T("StartWindow");
+	wcex.lpfnWndProc = WndStartProc;
+	RegisterClassEx(&wcex);
+	StartWindow = CreateWindow(_T("StartWindow"), _T("Start"), WS_OVERLAPPEDWINDOW | WS_THICKFRAME | WS_MAXIMIZEBOX, CW_USEDEFAULT, CW_USEDEFAULT, DEFAULT_WINDOW_DATA_WIDTH, DEFAULT_WINDOW_DATA_HEIGHT, NULL, NULL, hInstance, NULL);
+	TableWindow = CreateWindow(_T("DataWindow"), _T("Sniffing"), WS_OVERLAPPEDWINDOW , CW_USEDEFAULT, CW_USEDEFAULT, DEFAULT_WINDOW_DATA_WIDTH, DEFAULT_WINDOW_DATA_HEIGHT, NULL, NULL, hInstance, NULL);
 
-	RECT rect = { 10,0,DEFAULT_WINDOW_WIDTH - 30,DEFAULT_WINDOW_HEIGHT - 40 };
-	table.CreateListView(hWnd, (HMENU)ID_TABLE, rect, DEFAULT_WINDOW_WIDTH - 40);
-	char* colum_name = (char*)malloc(7 * sizeof(char));
-	strcpy(colum_name, "Number");
-	table.AddNewColum(colum_name, 0, (DEFAULT_WINDOW_WIDTH - 50) / 10);
-	colum_name = (char*)realloc(colum_name, 5 * sizeof(char));
-	strcpy(colum_name, "Time");
-	table.AddNewColum(colum_name, 1, (DEFAULT_WINDOW_WIDTH - 50) / 10);
-	colum_name = (char*)realloc(colum_name, 7 * sizeof(char));
-	strcpy(colum_name, "Source");
-	table.AddNewColum(colum_name, 2, 3 * (DEFAULT_WINDOW_WIDTH - 50) / 10);
-	colum_name = (char*)realloc(colum_name, 5 * sizeof(char));
-	strcpy(colum_name, "Dest");
-	table.AddNewColum(colum_name, 3, 3 * (DEFAULT_WINDOW_WIDTH - 50) / 10);
-	colum_name = (char*)realloc(colum_name, 9 * sizeof(char));
-	strcpy(colum_name, "Protocol");
-	table.AddNewColum(colum_name, 4, (DEFAULT_WINDOW_WIDTH - 50) / 10);
-	colum_name = (char*)realloc(colum_name, 7 * sizeof(char));
-	strcpy(colum_name, "Length");
-	table.AddNewColum(colum_name, 5, (DEFAULT_WINDOW_WIDTH - 50) / 10);
-	free(colum_name);
-
-	ShowWindow(hWnd, nCmdShow);
-	UpdateWindow(hWnd);
-	ShowWindow(hwndList, nCmdShow);
+	ShowWindow(StartWindow, nCmdShow);
+	UpdateWindow(StartWindow);
 
 	while (GetMessage(&msg, NULL, 0, 0))
 	{
@@ -114,142 +69,86 @@ int WINAPI WinMain(
 	}
 	return (int)msg.wParam;
 }
-
-
-void AddMenuToWindow(HWND window)
+const std::string TCHARToString(const TCHAR* tcharString)
 {
-	HMENU menu = CreateMenu();
-	HMENU subMenu = CreateMenu();
-	AppendMenu(subMenu, MF_STRING, OnOpenFileMenu, L"Open File");
-	AppendMenu(subMenu, MF_STRING, OnSaveAsFileMenu, L"Save as");
-	AppendMenu(subMenu, MF_STRING, OnSaveFileMenu, L"Save");
-	AppendMenu(subMenu, MF_MENUBARBREAK, NULL, NULL);
-	AppendMenu(subMenu, MF_STRING, OnExitMenu, L"Exit");
-
-	AppendMenu(menu, MF_POPUP, (UINT_PTR)subMenu, L"File");
-	AppendMenu(menu, MF_STRING, OnStartMenu, L"Start");
-	AppendMenu(menu, MF_STRING, OnStopMenu, L"Stop");
-
-	SetMenu(window, menu);
-}
-
-void DrawTextPanel(HWND window)
-{
-	HWND hwndText = CreateWindow(
-		L"STATIC",               // класс окна
-		L"Это текстовая панель", // текст
-		WS_VISIBLE | WS_CHILD | WS_BORDER | SS_CENTER, // стиль окна
-		0, 0, 0, 0,             // положение и размеры окна (будут скорректированы после создания окна)
-		window,                   // родительское окно
-		NULL,                   // идентификатор окна
-		NULL,                   // дескриптор экземпляра
-		NULL                    // дополнительные параметры создания
-	);
-
-	if (hwndText == NULL)
-	{
-		MessageBox(window, L"Не удалось создать текстовую панель!", L"Ошибка", MB_OK | MB_ICONERROR);
-	}
-	else
-	{
-		// Получение размеров клиентской области родительского окна
-		RECT rcClient;
-		GetClientRect(window, &rcClient);
-
-		// Установка высоты текстовой панели (например, 50 пикселей)
-		int panelHeight = 50;
-
-		// Перемещение текстовой панели внизу клиентской области родительского окна
-		MoveWindow(hwndText, 0, rcClient.bottom - panelHeight, rcClient.right, panelHeight, TRUE);
-	}
+	int sizeNeeded = WideCharToMultiByte(CP_UTF8, 0, tcharString, -1, nullptr, 0, nullptr, nullptr);
+	std::string result(sizeNeeded, 0);
+	WideCharToMultiByte(CP_UTF8, 0, tcharString, -1, &result[0], sizeNeeded, nullptr, nullptr);
+	return result;
 }
 
 
-LRESULT CALLBACK WndProc(
-	HWND   hWnd,
-	UINT   message,
-	WPARAM wParam,
-	LPARAM lParam
-)
+
+void InsertFullListIntoTable(std::vector<std::string> list)
 {
-	HDC hdc;
-	PAINTSTRUCT paint;
-	RECT rect = {};
-	switch (message)
+	std::string temp;
+	for (const auto& str : list)
 	{
-	case WM_COMMAND:
-		switch (wParam)
-		{
-		case OnExitMenu:
-			PostQuitMessage(0);
-		case OnOpenFileMenu:
-			//MessageBox(hWnd, L"File was open", L"Menu works", MB_OK);
-			break;
-		case OnSaveAsFileMenu:
-		{
-			OPENFILENAME ofn;
-			TCHAR szFile[MAX_PATH] = { 0 };
-			ZeroMemory(&ofn, sizeof(ofn));
+		temp = GetShortData(const_cast<char*>(str.c_str()), str.length());
+		DataTable.InsertNewRow(const_cast<char*>(temp.c_str()));
+	}
+}
 
-			ofn.lStructSize = sizeof(ofn);
-			ofn.hwndOwner = NULL; // Установите hwndOwner, чтобы указать родительское окно, если нужно
-			ofn.lpstrFile = szFile;
-			ofn.nMaxFile = sizeof(szFile);
-			ofn.lpstrFilter = _T("All Files (*.*)\0*.*\0"); // Фильтр для типов файлов
-			ofn.nFilterIndex = 1;
-			ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST;
+std::string GetFileName()
+{
+	OPENFILENAME ofn;
 
-			if (GetOpenFileName(&ofn) == TRUE) {
-				
-				MessageBox(NULL, szFile, _T("Выбранный файл"), MB_OK);
-			}
-			//MessageBox(hWnd, L"File was save as", L"Menu works", MB_OK);
-			break;
+	ZeroMemory(&ofn, sizeof(ofn));
+
+	ofn.lStructSize = sizeof(ofn);
+	ofn.hwndOwner = NULL;
+	ofn.lpstrFile = FileName;
+	ofn.nMaxFile = sizeof(FileName);
+	ofn.lpstrFilter = _T("All Files (*.*)\0*.*\0");
+	ofn.nFilterIndex = 1;
+	ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST;
+
+	if (GetOpenFileName(&ofn) == TRUE) {
+
+		MessageBox(NULL, FileName, _T("Выбранный файл"), MB_OK);
+	}
+	return TCHARToString(FileName);
+}
+
+
+
+
+void SaveListTofile(std::vector<std::string>& strings, const std::string& filename)
+{
+	std::ofstream outFile(filename, std::ios::out | std::ios::binary);
+
+	if (outFile.is_open())
+	{
+		for (const auto& line : strings) {
+			// Записываем длину строки
+			size_t len = line.size();
+			outFile.write(reinterpret_cast<char*>(&len), sizeof(size_t));
+
+			// Записываем саму строку
+			outFile.write(line.c_str(), len);
 		}
-		case OnSaveFileMenu:
-			//MessageBox(hWnd, L"File was save", L"Menu works", MB_OK);
-			break;
-		case OnStartMenu:
-			hThread = CreateThread(NULL, 0, Sniffing, (LPVOID)(&table), NULL, &threadId);
-			test = true;
-			//MessageBox(hWnd, L"Sniffing was started", L"Menu works", MB_OK);
-			break;
-		case OnStopMenu:
-			test = false;
-			WaitForSingleObject(hThread, 100);
-			CloseHandle(hThread);
-			//MessageBox(hWnd, L"Sniffing was stoped", L"Menu works", MB_OK);
-			break;
-
-		}
-		break;
-	case WM_CREATE:
-		AddMenuToWindow(hWnd);
-		//DrawTextPanel(hWnd);
-		PrepareForSniffing(&sniffer);
-
-		break;
-	case WM_PAINT:
-		hdc = BeginPaint(hWnd, &paint);
-
-		EndPaint(hWnd, &paint);
-		break;
-	case WM_SIZE:
-		rect.left += TABLE_OFFSET / 4;
-		rect.right += LOWORD(lParam) - TABLE_OFFSET / 2;
-		rect.bottom += HIWORD(lParam) - TABLE_OFFSET;
-		table.ResizeTable(rect);
-		break;
-	case WM_DESTROY:
-		ClearSocket(&sniffer);
-		PostQuitMessage(0);
-		break;
-	default:
-
-		return DefWindowProc(hWnd, message, wParam, lParam);
 	}
-	return 0;
 
+	outFile.close();
 }
+std::vector<std::string> LoadListFromFile(std::string filename)
+{
+	std::ifstream inFile("output.bin", std::ios::in | std::ios::binary);
+	std::vector<std::string> list;
+	size_t len;
+	if (inFile.is_open())
+	{
+		while (inFile.read(reinterpret_cast<char*>(&len), sizeof(size_t))) {
+			char* buffer = new char[len + 1];
+			inFile.read(buffer, len);
+			buffer[len] = '\0';
+			list.emplace_back(buffer, len + 1);
+			delete[] buffer;
+		}
+	}
 
+	inFile.close();
+
+	return list;
+}
 

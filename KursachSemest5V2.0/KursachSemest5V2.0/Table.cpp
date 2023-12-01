@@ -18,18 +18,25 @@ Table::~Table()
 
 	free(colum_width);
 }
-HWND Table::CreateListView(HWND parent_window, HMENU table_id,RECT list_size, int min_list_width)
+HWND Table::CreateListView(HWND parent_window, HMENU table_id,RECT list_size, int min_list_width, LONG_PTR ListViewProc)
 {
 	HINSTANCE hInst = (HINSTANCE)GetWindowLongPtr(parent_window, GWLP_HINSTANCE);
 	this->parent_window = parent_window;
 	list_window = CreateWindow(WC_LISTVIEW, _T(""),
-		WS_VISIBLE | WS_CHILD | WS_BORDER | LVS_REPORT | LVS_AUTOARRANGE ,
+		WS_VISIBLE | WS_CHILD | WS_BORDER | LVS_REPORT | LVS_AUTOARRANGE | LVS_SINGLESEL,
 		list_size.left, list_size.top, list_size.right, list_size.bottom,
 		parent_window, table_id, hInst, 0);
 	list_width = list_size.right - list_size.left;
 	this->min_list_width = min_list_width;
-
+	ListView_SetExtendedListViewStyle(list_window, LVS_EX_ONECLICKACTIVATE | LVS_EX_FULLROWSELECT| LVS_EX_TRACKSELECT);
+	oldListViewProc = SetWindowLongPtr(list_window, GWLP_WNDPROC, ListViewProc);
 	return list_window;
+}
+
+void Table::ClearTable() 
+{
+	ListView_DeleteAllItems(this->list_window);
+	row_numbers = 0;
 }
 
 bool Table::InsertNewRow(char* values)
@@ -43,12 +50,19 @@ bool Table::InsertNewRow(char* values)
 	{
 		token = strtok(temp, ",");
 		while (token != NULL) {
-			word = (char*)malloc(strlen(token) + 1);
-			strcpy(word, token);
-			InsertOneValue(word, i, row_numbers);
+			if (i == 0)
+			{
+				InsertOneValue(const_cast<char*>(std::to_string(row_numbers + 1).c_str()), i, row_numbers);
+			}
+			else
+			{
+				word = (char*)malloc(strlen(token) + 1);
+				strcpy(word, token);
+				InsertOneValue(word, i, row_numbers);
+				free(word);
+			}
 			token = strtok(NULL, ",");
 			i++;
-			free(word);
 		}
 	}
 	catch (...)
@@ -108,12 +122,19 @@ bool Table::InsertNewRow(char* values, int row_number)
 	{
 		token = strtok(temp, ",");
 		while (token != NULL) {
-			word = (char*)malloc(strlen(token) + 1); 
-			strcpy(word, token);
-			InsertOneValue(word, i, row_number);
+			if (i = 0)
+			{
+				InsertOneValue(const_cast<char*>(std::to_string(row_numbers+1).c_str()), i, row_number);
+			}
+			else
+			{
+				word = (char*)malloc(strlen(token) + 1);
+				strcpy(word, token);
+				InsertOneValue(word, i, row_number);
+				free(word);
+			}
 			token = strtok(NULL, ",");
 			i++;
-			free(word);
 		}
 	}
 	catch (...)

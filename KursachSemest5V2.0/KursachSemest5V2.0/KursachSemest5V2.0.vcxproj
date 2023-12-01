@@ -19,14 +19,20 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="DataWindowActions.h" />
     <ClInclude Include="definesHeader.h" />
     <ClInclude Include="functionsHeaders.h" />
+    <ClInclude Include="Interface.h" />
+    <ClInclude Include="StartWindowActions.h" />
     <ClInclude Include="StructHeader.h" />
     <ClInclude Include="Table.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="DataWindowActions.cpp" />
+    <ClCompile Include="Interface.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="Sniffing.cpp" />
+    <ClCompile Include="StartWindowActions.cpp" />
     <ClCompile Include="Table.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
