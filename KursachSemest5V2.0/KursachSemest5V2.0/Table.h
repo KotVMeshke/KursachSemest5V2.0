@@ -18,6 +18,7 @@ private:
 	char** colum_names;
 	double* colum_width;
 	int min_list_width;
+	bool scroll;
 
 	bool InsertOneValue(char*,int,int);
 public:
@@ -31,5 +32,6 @@ public:
 	bool InsertNewRow(char*);
 	bool ResizeTable(RECT);
 	void ClearTable();
+	void SetScrollSettings(bool);
 };
 

@@ -6,6 +6,7 @@ Table::Table()
 	colum_names = NULL;
 	colum_width = NULL;
 	row_numbers = 0;
+	scroll = true;
 }
 
 Table::~Table()
@@ -28,8 +29,9 @@ HWND Table::CreateListView(HWND parent_window, HMENU table_id,RECT list_size, in
 		parent_window, table_id, hInst, 0);
 	list_width = list_size.right - list_size.left;
 	this->min_list_width = min_list_width;
-	ListView_SetExtendedListViewStyle(list_window, LVS_EX_ONECLICKACTIVATE | LVS_EX_FULLROWSELECT| LVS_EX_TRACKSELECT);
-	oldListViewProc = SetWindowLongPtr(list_window, GWLP_WNDPROC, ListViewProc);
+	ListView_SetExtendedListViewStyle(list_window,   LVS_EX_FULLROWSELECT);
+	if(ListViewProc != NULL)
+		oldListViewProc = SetWindowLongPtr(list_window, GWLP_WNDPROC, ListViewProc);
 	return list_window;
 }
 
@@ -122,7 +124,7 @@ bool Table::InsertNewRow(char* values, int row_number)
 	{
 		token = strtok(temp, ",");
 		while (token != NULL) {
-			if (i = 0)
+			if (i == 0)
 			{
 				InsertOneValue(const_cast<char*>(std::to_string(row_numbers+1).c_str()), i, row_number);
 			}
@@ -179,7 +181,10 @@ bool Table::InsertOneValue(char* element, int element_position, int row_number)
 			}
 		}
 
-		ListView_EnsureVisible(list_window, lvi.iItem, FALSE);
+		if (scroll)
+		{
+			ListView_EnsureVisible(list_window, lvi.iItem, FALSE);
+		}
 
 
 	}
@@ -219,3 +224,10 @@ bool Table::ResizeTable(RECT window_size)
 	}
 	return true;
 }
+
+void Table::SetScrollSettings(bool condition)
+{
+	scroll = condition;
+}
+
+

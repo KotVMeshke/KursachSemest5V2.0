@@ -12,6 +12,7 @@
 #define TABLE_OFFSET						30
 #define ID_TABLE							101
 
+#define WM_SHOW_PACKAGE						(WM_USER + 1)
 
 #define SIO_RCVALL _WSAIOW(IOC_VENDOR,1) 
 #define ICMP								1
@@ -31,7 +32,10 @@
 #define OnStopMenu							6		
 #define OnResetTable						7	
 #define OnBackToStart						8
+#define OnStartScroll						9
+#define OnStopScroll						10
 
-#define OnReloadInterface					9
+#define OnReloadInterface					11
 
-#define SelectInterface						10
+#define SelectInterface						12
+

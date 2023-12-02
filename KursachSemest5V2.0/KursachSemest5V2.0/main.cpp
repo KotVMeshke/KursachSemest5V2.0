@@ -11,9 +11,11 @@
 
 #include "DataWindowActions.h"
 #include "StartWindowActions.h"
+#include "InformationWindowActions.h"
 
 HWND StartWindow;
 HWND TableWindow;
+HWND InformationWindow;
 
 
 DWORD WINAPI Sniffing(LPVOID lpParam)
@@ -54,8 +56,13 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance,_In_opt_ HINSTANCE hPrevInstance,_In
 	wcex.lpszClassName = _T("StartWindow");
 	wcex.lpfnWndProc = WndStartProc;
 	RegisterClassEx(&wcex);
+
+	wcex.lpszClassName = _T("InformationWindow");
+	wcex.lpfnWndProc = WndInformProc;
+	RegisterClassEx(&wcex);
 	StartWindow = CreateWindow(_T("StartWindow"), _T("Start"), WS_OVERLAPPEDWINDOW | WS_THICKFRAME | WS_MAXIMIZEBOX, CW_USEDEFAULT, CW_USEDEFAULT, DEFAULT_WINDOW_DATA_WIDTH, DEFAULT_WINDOW_DATA_HEIGHT, NULL, NULL, hInstance, NULL);
 	TableWindow = CreateWindow(_T("DataWindow"), _T("Sniffing"), WS_OVERLAPPEDWINDOW , CW_USEDEFAULT, CW_USEDEFAULT, DEFAULT_WINDOW_DATA_WIDTH, DEFAULT_WINDOW_DATA_HEIGHT, NULL, NULL, hInstance, NULL);
+	TableWindow = CreateWindow(_T("InformationWindow"), _T("Package data"), WS_OVERLAPPEDWINDOW , CW_USEDEFAULT, CW_USEDEFAULT, DEFAULT_WINDOW_DATA_WIDTH, DEFAULT_WINDOW_DATA_HEIGHT, NULL, NULL, hInstance, NULL);
 
 	ShowWindow(StartWindow, nCmdShow);
 	UpdateWindow(StartWindow);

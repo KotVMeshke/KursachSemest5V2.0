@@ -56,71 +56,47 @@ void PrepareForSniffing(SOCKET* sniffer,int InterfaceNumber)
 	WSADATA wsa;
 
 	QueryPerformanceFrequency(&frequency);
-	printf("\nInitialising Winsock...");
 	if (WSAStartup(MAKEWORD(2, 2), &wsa) != 0)
 	{
-		printf("WSAStartup() failed.\n");
 		return;
 	}
-	printf("Initialised");
 
-	printf("\nCreating RAW Socket...");
 	*sniffer = socket(AF_INET, SOCK_RAW, IPPROTO_IP);
 	if (*sniffer == INVALID_SOCKET)
 	{
-		printf("Failed to create raw socket.\n");
 		return;
 	}
-	printf("Created.");
 
 	if (gethostname(hostname, sizeof(hostname)) == SOCKET_ERROR)
 	{
-		printf("Error : %d", WSAGetLastError());
 		return;
 	}
-	printf("\nHost name : %s \n", hostname);
 
 	local = gethostbyname(hostname);
-	printf("\nAvailable Network Interfaces : \n");
 	if (local == NULL)
 	{
-		printf("Error : %d.\n", WSAGetLastError());
 		return ;
 	}
 
 	for (i = 0; local->h_addr_list[i] != 0; ++i)
 	{
 		memcpy(&addr, local->h_addr_list[i], sizeof(struct in_addr));
-		printf("Interface Number : %d Address : %s\n", i, inet_ntoa(addr));
 	}
-
-	printf("Enter the interface number you would like to sniff : ");
 	memset(&dest, 0, sizeof(dest));
 	memcpy(&dest.sin_addr.s_addr, local->h_addr_list[InterfaceNumber], sizeof(dest.sin_addr.s_addr));
 	dest.sin_family = AF_INET;
 	dest.sin_port = 0;
 
-	printf("\nBinding socket to local system and port 0 ...");
 	if (bind(*sniffer, (struct sockaddr*)&dest, sizeof(dest)) == SOCKET_ERROR)
 	{
-		printf("bind(%s) failed.\n", inet_ntoa(addr));
 		return;
 	}
-	printf("Binding successful");
 
 	j = 1;
-	printf("\nSetting socket to sniff...");
 	if (WSAIoctl(*sniffer, SIO_RCVALL, &j, sizeof(j), 0, 0, (LPDWORD)&in, 0, 0) == SOCKET_ERROR)
 	{
-		printf("WSAIoctl() failed.\n");
 		return;
 	}
-	printf("Socket set.");
-
-	printf("\nStarted Sniffing\n");
-	printf("Packet Capture Statistics...\n");
-	
-
 }
 
 void StartSniffing(SOCKET sniffer, char* Buffer)
@@ -210,77 +186,76 @@ void ClearSocket(SOCKET* socket)
 //		++others;
 //		break;
 //	}
-//	PrintShortData(Buffer, Size);
-//	//printf("TCP : %d UDP : %d ICMP : %d IGMP : %d Others : %d Total : %d\r", tcp, udp, icmp, igmp, others, total);
+//
 //}
-
-void PrintIpHeader(char* Buffer)
-{
-	unsigned short iphdrlen;
-
-	iphdr = (IPV4_HDR*)Buffer;
-	iphdrlen = iphdr->ip_header_len * 4;
-
-	memset(&source, 0, sizeof(source));
-	source.sin_addr.s_addr = iphdr->ip_srcaddr;
-
-	memset(&dest, 0, sizeof(dest));
-	dest.sin_addr.s_addr = iphdr->ip_destaddr;
-
-	/*fprintf(logfile, "\n");
-	fprintf(logfile, "IP Header\n");
-	fprintf(logfile, " |-IP Version : %d\n", (unsigned int)iphdr->ip_version);
-	fprintf(logfile, " |-IP Header Length : %d DWORDS or %d Bytes\n", (unsigned int)iphdr->ip_header_len, ((unsigned int)(iphdr->ip_header_len)) * 4);
-	fprintf(logfile, " |-Type Of Service : %d\n", (unsigned int)iphdr->ip_tos);
-	fprintf(logfile, " |-IP Total Length : %d Bytes(Size of Packet)\n", ntohs(iphdr->ip_total_length));
-	fprintf(logfile, " |-Identification : %d\n", ntohs(iphdr->ip_id));
-	fprintf(logfile, " |-Reserved ZERO Field : %d\n", (unsigned int)iphdr->ip_reserved_zero);
-	fprintf(logfile, " |-Dont Fragment Field : %d\n", (unsigned int)iphdr->ip_dont_fragment);
-	fprintf(logfile, " |-More Fragment Field : %d\n", (unsigned int)iphdr->ip_more_fragment);
-	fprintf(logfile, " |-TTL : %d\n", (unsigned int)iphdr->ip_ttl);
-	fprintf(logfile, " |-Protocol : %d\n", (unsigned int)iphdr->ip_protocol);
-	fprintf(logfile, " |-Checksum : %d\n", ntohs(iphdr->ip_checksum));
-	fprintf(logfile, " |-Source IP : %s\n", inet_ntoa(source.sin_addr));
-	fprintf(logfile, " |-Destination IP : %s\n", inet_ntoa(dest.sin_addr));*/
-}
-
-char* GetNameByNumber(unsigned int protocol)
-{
-	char* str;
-	switch (protocol)
-	{
-	case ICMP:
-		str = (char*)malloc(4 * sizeof(char));
-		strcpy(str, "ICMP");
-		break;
-
-	case IGMP:
-		str = (char*)malloc(4 * sizeof(char));
-		strcpy(str, "IGMP");
-		break;
-
-	case TCP:
-		str = (char*)malloc(3 * sizeof(char));
-		strcpy(str, "TCP");
-		break;
-
-	case UDP:
-		str = (char*)malloc(3 * sizeof(char));
-		strcpy(str, "UDP");
-		break;
-
-	default:
-		str = (char*)malloc(5 * sizeof(char));
-		strcpy(str, "INCOR");
-		break;
-
-	}
-
-	return str;
-}
-
-
-
+//
+//void PrintIpHeader(char* Buffer)
+//{
+//	unsigned short iphdrlen;
+//
+//	iphdr = (IPV4_HDR*)Buffer;
+//	iphdrlen = iphdr->ip_header_len * 4;
+//
+//	memset(&source, 0, sizeof(source));
+//	source.sin_addr.s_addr = iphdr->ip_srcaddr;
+//
+//	memset(&dest, 0, sizeof(dest));
+//	dest.sin_addr.s_addr = iphdr->ip_destaddr;
+//
+//	/*fprintf(logfile, "\n");
+//	fprintf(logfile, "IP Header\n");
+//	fprintf(logfile, " |-IP Version : %d\n", (unsigned int)iphdr->ip_version);
+//	fprintf(logfile, " |-IP Header Length : %d DWORDS or %d Bytes\n", (unsigned int)iphdr->ip_header_len, ((unsigned int)(iphdr->ip_header_len)) * 4);
+//	fprintf(logfile, " |-Type Of Service : %d\n", (unsigned int)iphdr->ip_tos);
+//	fprintf(logfile, " |-IP Total Length : %d Bytes(Size of Packet)\n", ntohs(iphdr->ip_total_length));
+//	fprintf(logfile, " |-Identification : %d\n", ntohs(iphdr->ip_id));
+//	fprintf(logfile, " |-Reserved ZERO Field : %d\n", (unsigned int)iphdr->ip_reserved_zero);
+//	fprintf(logfile, " |-Dont Fragment Field : %d\n", (unsigned int)iphdr->ip_dont_fragment);
+//	fprintf(logfile, " |-More Fragment Field : %d\n", (unsigned int)iphdr->ip_more_fragment);
+//	fprintf(logfile, " |-TTL : %d\n", (unsigned int)iphdr->ip_ttl);
+//	fprintf(logfile, " |-Protocol : %d\n", (unsigned int)iphdr->ip_protocol);
+//	fprintf(logfile, " |-Checksum : %d\n", ntohs(iphdr->ip_checksum));
+//	fprintf(logfile, " |-Source IP : %s\n", inet_ntoa(source.sin_addr));
+//	fprintf(logfile, " |-Destination IP : %s\n", inet_ntoa(dest.sin_addr));*/
+//}
+//
+//char* GetNameByNumber(unsigned int protocol)
+//{
+//	char* str;
+//	switch (protocol)
+//	{
+//	case ICMP:
+//		str = (char*)malloc(4 * sizeof(char));
+//		strcpy(str, "ICMP");
+//		break;
+//
+//	case IGMP:
+//		str = (char*)malloc(4 * sizeof(char));
+//		strcpy(str, "IGMP");
+//		break;
+//
+//	case TCP:
+//		str = (char*)malloc(3 * sizeof(char));
+//		strcpy(str, "TCP");
+//		break;
+//
+//	case UDP:
+//		str = (char*)malloc(3 * sizeof(char));
+//		strcpy(str, "UDP");
+//		break;
+//
+//	default:
+//		str = (char*)malloc(5 * sizeof(char));
+//		strcpy(str, "INCOR");
+//		break;
+//
+//	}
+//
+//	return str;
+//}
+//
+//
+//
 std::string GetShortData(char* buffer, unsigned int size)
 {
 	number_of_packege++;
@@ -300,7 +275,7 @@ std::string GetShortData(char* buffer, unsigned int size)
 
 	memset(&dest, 0, sizeof(dest));
 	dest.sin_addr.s_addr = iphdr->ip_destaddr;
-	//shortData = std::to_string(number_of_packege) + ","+ std::to_string(elapsedSeconds) + "," + inet_ntoa(source.sin_addr) + "," + inet_ntoa(dest.sin_addr) +","  + GetNameByNumber((unsigned int)iphdr->ip_protocol) + "," + shortData.append(std::to_string(ntohs(iphdr->ip_total_length)));
+
 	std::string source_addr = inet_ntoa(source.sin_addr);
 	std::string dest_addr = inet_ntoa(dest.sin_addr);
 
@@ -318,27 +293,27 @@ std::string GetShortData(char* buffer, unsigned int size)
 	
 	return shortData;
 }
-
-void PrintShortData(char* buffer, unsigned int size)
-{
-	iphdr = (IPV4_HDR*)buffer;
-	if (number_of_packege == 1)
-	{
-		QueryPerformanceCounter(&start);
-		double elapsedSeconds = 0;
-	}
-	QueryPerformanceCounter(&end);
-	double elapsedSeconds = static_cast<double>(end.QuadPart - start.QuadPart) / frequency.QuadPart;
-	memset(&source, 0, sizeof(source));
-	source.sin_addr.s_addr = iphdr->ip_srcaddr;
-
-	memset(&dest, 0, sizeof(dest));
-	dest.sin_addr.s_addr = iphdr->ip_destaddr;
-	//fprintf(logfile2, "%8d| %.6f| %15s| %15s| %6s| %6hu\n", number_of_packege, elapsedSeconds, inet_ntoa(source.sin_addr), inet_ntoa(dest.sin_addr), GetNameByNumber((unsigned int)iphdr->ip_protocol), ntohs(iphdr->ip_total_length));
-	free(str);
-}
-
-
+//
+////void PrintShortData(char* buffer, unsigned int size)
+////{
+////	iphdr = (IPV4_HDR*)buffer;
+////	if (number_of_packege == 1)
+////	{
+////		QueryPerformanceCounter(&start);
+////		double elapsedSeconds = 0;
+////	}
+////	QueryPerformanceCounter(&end);
+////	double elapsedSeconds = static_cast<double>(end.QuadPart - start.QuadPart) / frequency.QuadPart;
+////	memset(&source, 0, sizeof(source));
+////	source.sin_addr.s_addr = iphdr->ip_srcaddr;
+////
+////	memset(&dest, 0, sizeof(dest));
+////	dest.sin_addr.s_addr = iphdr->ip_destaddr;
+////	//fprintf(logfile2, "%8d| %.6f| %15s| %15s| %6s| %6hu\n", number_of_packege, elapsedSeconds, inet_ntoa(source.sin_addr), inet_ntoa(dest.sin_addr), GetNameByNumber((unsigned int)iphdr->ip_protocol), ntohs(iphdr->ip_total_length));
+////	free(str);
+////}
+//
+//
 //void PrintTcpPacket(char* Buffer, int Size)
 //{
 //	unsigned short iphdrlen;
@@ -410,7 +385,6 @@ void PrintShortData(char* buffer, unsigned int size)
 //	fprintf(logfile, "IP Header\n");
 //
 //	PrintData(Buffer, iphdrlen);
-//sdfsfdfsdfsd
 //	fprintf(logfile, "UDP Header\n");
 //
 //	PrintData(Buffer + iphdrlen, sizeof(UDP_HDR));
@@ -504,6 +478,6 @@ void PrintShortData(char* buffer, unsigned int size)
 //
 //	fprintf(logfile, "\n");
 //}
-//
+
 
 

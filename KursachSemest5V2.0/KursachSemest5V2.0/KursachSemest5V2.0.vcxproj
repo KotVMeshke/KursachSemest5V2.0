@@ -22,6 +22,7 @@
     <ClInclude Include="DataWindowActions.h" />
     <ClInclude Include="definesHeader.h" />
     <ClInclude Include="functionsHeaders.h" />
+    <ClInclude Include="InformationWindowActions.h" />
     <ClInclude Include="Interface.h" />
     <ClInclude Include="StartWindowActions.h" />
     <ClInclude Include="StructHeader.h" />
@@ -125,6 +126,7 @@
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <UACExecutionLevel>HighestAvailable</UACExecutionLevel>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -141,6 +143,7 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <UACExecutionLevel>HighestAvailable</UACExecutionLevel>
     </Link>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

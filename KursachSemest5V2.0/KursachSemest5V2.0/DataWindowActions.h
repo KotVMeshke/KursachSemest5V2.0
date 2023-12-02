@@ -5,6 +5,7 @@
 #include <Windows.h>
 #include <CommCtrl.h>
 #include "commctrl.h"
+#include <fstream>
 #include "Table.h"
 #include "definesHeader.h"
 
@@ -27,20 +28,6 @@ LRESULT CALLBACK ListViewProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 	{
 	case WM_NOTIFY:
 	{
-		NMHDR* pNMHDR = (NMHDR*)lParam;
-
-
-		if (pNMHDR->code == LVN_ITEMCHANGED)
-		{
-			NMLISTVIEW* pNMLV = (NMLISTVIEW*)lParam;
-
-			// Проверяем, что было изменение выделения
-			if ((pNMLV->uChanged & LVIF_STATE) && (pNMLV->uNewState & LVIS_SELECTED))
-			{
-				// Вся строка должна быть выделена
-				ListView_SetItemState(hwnd, pNMLV->iItem, LVIS_SELECTED, LVIS_SELECTED);
-			}
-		}
 
 	}
 	break;
@@ -49,14 +36,13 @@ LRESULT CALLBACK ListViewProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 		return CallWindowProc((WNDPROC)DataTable.oldListViewProc, hwnd, msg, wParam, lParam);
 	}
 
-	// Если сообщение обработано, верните ноль
 	return 0;
 }
 
 void SetColumsToTable(Table* table, HWND hWnd)
 {
 	RECT rect = { 10,0,DEFAULT_WINDOW_DATA_WIDTH - 30,DEFAULT_WINDOW_DATA_HEIGHT - 40 };
-	table->CreateListView(hWnd, (HMENU)ID_TABLE, rect, DEFAULT_WINDOW_DATA_WIDTH - 40, (LONG_PTR)ListViewProc);
+	table->CreateListView(hWnd, (HMENU)ID_TABLE, rect, DEFAULT_WINDOW_DATA_WIDTH - 40, NULL);
 	char* colum_name = (char*)malloc(7 * sizeof(char));
 	strcpy(colum_name, "Number");
 	table->AddNewColum(colum_name, 0, (DEFAULT_WINDOW_DATA_WIDTH - 50) / 10);
@@ -89,13 +75,17 @@ LRESULT CALLBACK WndDataProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 		switch (wParam)
 		{
 		case OnExitMenu:
+		{
 			PostQuitMessage(0);
+		}
 		case OnOpenFileMenu:
+		{
 			DataTable.ClearTable();
 			ScannList = LoadListFromFile(GetFileName());
 			InsertFullListIntoTable(ScannList);
 			MessageBox(hWnd, L"File was open", L"Menu works", MB_OK);
 			break;
+		}
 		case OnSaveAsFileMenu:
 		{
 			SaveListTofile(ScannList, GetFileName());
@@ -150,7 +140,6 @@ LRESULT CALLBACK WndDataProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 			EnableMenuItem(hMenu, OnStartMenu, MF_BYCOMMAND | MF_ENABLED);
 			EnableMenuItem(hMenu, OnResetTable, MF_BYCOMMAND | MF_GRAYED);
 
-
 			SniffingRule = false;
 			WaitForSingleObject(hThread, 100);
 			CloseHandle(hThread);
@@ -169,6 +158,16 @@ LRESULT CALLBACK WndDataProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 			PrepareForSniffing(&sniffer,lParam-INTERFACE_SELECTORS);
 			break;
 		}
+		case OnStartScroll:
+		{
+			DataTable.SetScrollSettings(true);
+			break;
+		}
+		case OnStopScroll:
+		{
+			DataTable.SetScrollSettings(false);
+			break;
+		}
 		}
 		break;
 	case WM_PAINT:
@@ -178,8 +177,26 @@ LRESULT CALLBACK WndDataProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 		break;
 	case WM_CREATE:
 	{
+
 		AddMenuToDataWindow(hWnd);
 		SetColumsToTable(&DataTable, hWnd);
+		break;
+	}
+	case WM_NOTIFY:
+	{
+		NMHDR* nmhdr = reinterpret_cast<NMHDR*>(lParam);
+		if (nmhdr->code == (DWORD)(NM_CLICK) && nmhdr->idFrom == ID_TABLE)
+		{
+			NMITEMACTIVATE* nmitem = reinterpret_cast<NMITEMACTIVATE*>(lParam);
+
+			int selectedIndex = nmitem->iItem;
+			std::string selectedPackage = ScannList[selectedIndex];
+
+			HWND InformWindow = FindWindow(L"InformationWindow", NULL);
+			ShowWindow(InformWindow, SW_SHOW);
+			SendMessage(InformWindow, WM_SHOW_PACKAGE, (WPARAM)selectedPackage.c_str(), selectedPackage.length());
+			
+		}
 		break;
 	}
 	case WM_SIZE:
@@ -203,18 +220,23 @@ LRESULT CALLBACK WndDataProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 void AddMenuToDataWindow(HWND window)
 {
 	HMENU menu = CreateMenu();
-	HMENU subMenu = CreateMenu();
-	AppendMenu(subMenu, MF_STRING, OnOpenFileMenu, L"Open File");
-	AppendMenu(subMenu, MF_STRING, OnSaveAsFileMenu, L"Save as");
-	AppendMenu(subMenu, MF_STRING, OnSaveFileMenu, L"Save");
-	AppendMenu(subMenu, MF_MENUBARBREAK, NULL, NULL);
-	AppendMenu(subMenu, MF_STRING, OnExitMenu, L"Exit");
-
-	AppendMenu(menu, MF_POPUP, (UINT_PTR)subMenu, L"File");
+	HMENU fileMenu = CreateMenu();
+	HMENU settingsMenu = CreateMenu();
+	AppendMenu(fileMenu, MF_STRING, OnOpenFileMenu, L"Open File");
+	AppendMenu(fileMenu, MF_STRING, OnSaveAsFileMenu, L"Save as");
+	AppendMenu(fileMenu, MF_STRING, OnSaveFileMenu, L"Save");
+	AppendMenu(fileMenu, MF_MENUBARBREAK, NULL, NULL);
+	AppendMenu(fileMenu, MF_STRING, OnExitMenu, L"Exit");
+	
+	AppendMenu(menu, MF_POPUP, (UINT_PTR)fileMenu, L"File");
 	AppendMenu(menu, MF_STRING, OnStartMenu, L"Start");
 	AppendMenu(menu, MF_STRING, OnStopMenu, L"Stop");
 	AppendMenu(menu, MF_STRING, OnResetTable, L"Reset");
 	AppendMenu(menu, MF_STRING, OnBackToStart, L"Start page");
+
+	AppendMenu(settingsMenu, MF_STRING, OnStartScroll, L"Start scroll");
+	AppendMenu(settingsMenu, MF_STRING, OnStopScroll, L"Stop scroll");
+	AppendMenu(menu, MF_POPUP, (UINT_PTR)settingsMenu, L"Settings");
 
 	SetMenu(window, menu);
 	EnableMenuItem(menu, OnStopMenu, MF_BYCOMMAND | MF_GRAYED);
