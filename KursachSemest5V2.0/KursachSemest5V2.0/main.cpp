@@ -62,7 +62,7 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance,_In_opt_ HINSTANCE hPrevInstance,_In
 	RegisterClassEx(&wcex);
 	StartWindow = CreateWindow(_T("StartWindow"), _T("Start"), WS_OVERLAPPEDWINDOW | WS_THICKFRAME | WS_MAXIMIZEBOX, CW_USEDEFAULT, CW_USEDEFAULT, DEFAULT_WINDOW_DATA_WIDTH, DEFAULT_WINDOW_DATA_HEIGHT, NULL, NULL, hInstance, NULL);
 	TableWindow = CreateWindow(_T("DataWindow"), _T("Sniffing"), WS_OVERLAPPEDWINDOW , CW_USEDEFAULT, CW_USEDEFAULT, DEFAULT_WINDOW_DATA_WIDTH, DEFAULT_WINDOW_DATA_HEIGHT, NULL, NULL, hInstance, NULL);
-	TableWindow = CreateWindow(_T("InformationWindow"), _T("Package data"), WS_OVERLAPPEDWINDOW , CW_USEDEFAULT, CW_USEDEFAULT, DEFAULT_WINDOW_DATA_WIDTH, DEFAULT_WINDOW_DATA_HEIGHT, NULL, NULL, hInstance, NULL);
+	InformationWindow = CreateWindow(_T("InformationWindow"), _T("Package data"), WS_OVERLAPPEDWINDOW , CW_USEDEFAULT, CW_USEDEFAULT, DEFAULT_WINDOW_DATA_WIDTH, DEFAULT_WINDOW_DATA_HEIGHT, NULL, NULL, hInstance, NULL);
 
 	ShowWindow(StartWindow, nCmdShow);
 	UpdateWindow(StartWindow);
@@ -96,7 +96,7 @@ void InsertFullListIntoTable(std::vector<std::string> list)
 	}
 }
 
-std::string GetFileName()
+std::string GetFileName(DWORD tags)
 {
 	OPENFILENAME ofn;
 
@@ -106,13 +106,13 @@ std::string GetFileName()
 	ofn.hwndOwner = NULL;
 	ofn.lpstrFile = FileName;
 	ofn.nMaxFile = sizeof(FileName);
-	ofn.lpstrFilter = _T("All Files (*.*)\0*.*\0");
+	ofn.lpstrFilter = _T("Text Files (*.txt)\0*.txt\0Binary Files (*.bin)\0*.bin\0All Files (*.*)\0*.*\0");
 	ofn.nFilterIndex = 1;
-	ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST;
+	ofn.Flags = OFN_PATHMUSTEXIST ;
 
 	if (GetOpenFileName(&ofn) == TRUE) {
 
-		MessageBox(NULL, FileName, _T("Выбранный файл"), MB_OK);
+		MessageBox(NULL, FileName, _T("SelectedFile"), MB_OK);
 	}
 	return TCHARToString(FileName);
 }
@@ -127,11 +127,8 @@ void SaveListTofile(std::vector<std::string>& strings, const std::string& filena
 	if (outFile.is_open())
 	{
 		for (const auto& line : strings) {
-			// Записываем длину строки
 			size_t len = line.size();
 			outFile.write(reinterpret_cast<char*>(&len), sizeof(size_t));
-
-			// Записываем саму строку
 			outFile.write(line.c_str(), len);
 		}
 	}
@@ -140,7 +137,7 @@ void SaveListTofile(std::vector<std::string>& strings, const std::string& filena
 }
 std::vector<std::string> LoadListFromFile(std::string filename)
 {
-	std::ifstream inFile("output.bin", std::ios::in | std::ios::binary);
+	std::ifstream inFile(filename, std::ios::in | std::ios::binary);
 	std::vector<std::string> list;
 	size_t len;
 	if (inFile.is_open())

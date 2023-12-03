@@ -5,29 +5,21 @@
 #include <Windows.h>
 #include <CommCtrl.h>
 #include "commctrl.h"
+#include <fstream>
 #include "Table.h"
 #include "definesHeader.h"
 
 HWND TextBox;
-//struct sockaddr_in source, dest;
-//char hex[2];
-//unsigned int number_of_packege = 0;
-//LARGE_INTEGER frequency;
-//LARGE_INTEGER start;
-//LARGE_INTEGER end;
-//double elapsedSeconds;
-//IPV4_HDR* iphdr;
-//TCP_HDR* tcpheader;
-//UDP_HDR* udpheader;
-//ICMP_HDR* icmpheader;
+
+void PrintData(char* data, int Size);
 
 void PrintToTextBox(const wchar_t* text)
 {
 	if (TextBox != nullptr)
 	{
 		int length = GetWindowTextLength(TextBox);
-		SendMessage(TextBox, EM_SETSEL, length, length); // Перемещаем курсор в конец текстового поля
-		SendMessage(TextBox, EM_REPLACESEL, FALSE, reinterpret_cast<LPARAM>(text)); // Добавляем текст в текстовое поле
+		SendMessage(TextBox, EM_SETSEL, length, length); 
+		SendMessage(TextBox, EM_REPLACESEL, FALSE, reinterpret_cast<LPARAM>(text));
 	}
 }
 
@@ -73,26 +65,26 @@ void ResizeTextBox(HWND parentWindow, HWND TextBox)
 {
 	RECT rect = {};
 	GetWindowRect(parentWindow, &rect);
-	MoveWindow(TextBox, 0, 0, rect.right-rect.left, rect.bottom - rect.top, TRUE);
+	MoveWindow(TextBox, 0, 0, rect.right - rect.left, rect.bottom - rect.top - 50, TRUE);
 }
 
 void SetTextViewFont(HWND textView, const wchar_t* fontName, int fontSize)
 {
 	HFONT newFont = CreateFont(
-		fontSize,                     // Размер шрифта
-		0,                            // Ширина символов (0 - по умолчанию)
-		0,                            // Угол наклона (0 - по умолчанию)
-		0,                            // Угол поворота (0 - по умолчанию)
-		FW_NORMAL,                    // Толщина шрифта (FW_NORMAL - нормальная толщина)
-		FALSE,                        // Полужирный шрифт (FALSE - нет)
-		FALSE,                        // Курсивный шрифт (FALSE - нет)
-		FALSE,                        // Подчеркнутый шрифт (FALSE - нет)
-		DEFAULT_CHARSET,              // Кодировка символов (DEFAULT_CHARSET - текущая кодировка)
-		OUT_DEFAULT_PRECIS,           // Точность вывода (OUT_DEFAULT_PRECIS - по умолчанию)
-		CLIP_DEFAULT_PRECIS,          // Точность отсечения (CLIP_DEFAULT_PRECIS - по умолчанию)
-		DEFAULT_QUALITY,              // Качество вывода (DEFAULT_QUALITY - по умолчанию)
-		DEFAULT_PITCH | FF_DONTCARE,  // Начертание шрифта (DEFAULT_PITCH | FF_DONTCARE - по умолчанию)
-		fontName                      // Имя шрифта
+		fontSize,                     
+		0,                          
+		0,                            
+		0,                           
+		FW_NORMAL,                   
+		FALSE,                       
+		FALSE,                        
+		FALSE,                       
+		DEFAULT_CHARSET,             
+		OUT_DEFAULT_PRECIS,           
+		CLIP_DEFAULT_PRECIS,          
+		DEFAULT_QUALITY,              
+		DEFAULT_PITCH | FF_DONTCARE,
+		fontName    
 	);
 
 	SendMessage(textView, WM_SETFONT, reinterpret_cast<WPARAM>(newFont), TRUE);
@@ -103,7 +95,7 @@ HWND CreateTextView(HWND parentWindow, HINSTANCE hInstance)
 {
 	RECT rect = {};
 	GetWindowRect(parentWindow, &rect);
-	HWND textPanel = CreateWindowEx(0,L"EDIT",nullptr, WS_CHILD | WS_VISIBLE | WS_BORDER | WS_VSCROLL | ES_MULTILINE| ES_READONLY,0, 0, rect.right-rect.left, rect.bottom - rect.top,parentWindow,nullptr,hInstance,nullptr);
+	HWND textPanel = CreateWindowEx(0, L"EDIT", nullptr, WS_CHILD | WS_VISIBLE | WS_BORDER | WS_VSCROLL | ES_MULTILINE | ES_READONLY, 0, 0, rect.right - rect.left, rect.bottom - rect.top-50, parentWindow, nullptr, hInstance, nullptr);
 	return textPanel;
 }
 
@@ -111,7 +103,7 @@ void AddMenuToInformWindow(HWND window)
 {
 	HMENU menu = CreateMenu();
 	HMENU fileMenu = CreateMenu();
-	AppendMenu(fileMenu, MF_STRING, OnSaveAsFileMenu, L"Save Data");
+	AppendMenu(fileMenu, MF_STRING, OnSavePackageData, L"Save Data");
 	AppendMenu(fileMenu, MF_MENUBARBREAK, NULL, NULL);
 	AppendMenu(fileMenu, MF_STRING, OnExitMenu, L"Close");
 
@@ -119,6 +111,33 @@ void AddMenuToInformWindow(HWND window)
 
 	SetMenu(window, menu);
 }
+
+void SafePackageToFile(std::string fileName, std::string package)
+{
+	std::ofstream outFile(fileName);
+	if (outFile.is_open())
+	{
+		outFile.write(package.c_str(), package.length());
+	}
+}
+
+std::string GetTextBoxString()
+{
+	int textLength = GetWindowTextLength(TextBox);
+
+	if (textLength > 0) {
+		TCHAR* buffer = new TCHAR[textLength + 1];
+		GetWindowText(TextBox, buffer, textLength + 1);
+		std::string text = TCHARToString(buffer);
+		delete[] buffer;
+		return text;
+	}
+	else {
+		return "";
+	}
+}
+
+void ProcessPacket(char* Buffer, int Size);
 
 LRESULT CALLBACK WndInformProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
@@ -130,7 +149,14 @@ LRESULT CALLBACK WndInformProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lP
 	case WM_COMMAND:
 		switch (wParam)
 		{
-
+		case OnExitMenu:
+		{
+			SendMessage(hWnd, WM_DESTROY, 0, 0);
+		}
+		case OnSavePackageData:
+		{
+			SafePackageToFile(GetFileName(OFN_PATHMUSTEXIST), GetTextBoxString());
+		}
 		}
 		break;
 	case WM_SHOW_PACKAGE:
@@ -157,7 +183,7 @@ LRESULT CALLBACK WndInformProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lP
 		ResizeTextBox(hWnd, TextBox);
 		break;
 	case WM_DESTROY:
-		PostQuitMessage(0);
+		ShowWindow(hWnd, SW_HIDE);
 		break;
 	default:
 
@@ -166,7 +192,9 @@ LRESULT CALLBACK WndInformProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lP
 	return 0;
 
 }
-
+void PrintUdpPacket(char* Buffer, int Size);
+void PrintIcmpPacket(char* Buffer, int Size);
+void PrintTcpPacket(char* Buffer, int Size);
 void ProcessPacket(char* Buffer, int Size)
 {
 	IPV4_HDR* iphdr = (IPV4_HDR*)Buffer;
@@ -194,40 +222,38 @@ void ProcessPacket(char* Buffer, int Size)
 
 }
 
-char* GetNameByNumber(unsigned int protocol)
+
+std::string GetNameByNumber(unsigned int protocol)
 {
-	char* str;
+	std::string str;
 	switch (protocol)
 	{
 	case ICMP:
-		str = (char*)malloc(4 * sizeof(char));
-		strcpy(str, "ICMP");
+		str = "ICMP";
 		break;
 
 	case IGMP:
-		str = (char*)malloc(4 * sizeof(char));
-		strcpy(str, "IGMP");
+		str = "IGMP";
 		break;
 
 	case TCP:
-		str = (char*)malloc(3 * sizeof(char));
-		strcpy(str, "TCP");
+		str = "TCP";
 		break;
 
 	case UDP:
-		str = (char*)malloc(3 * sizeof(char));
-		strcpy(str, "UDP");
+		str = "UDP";
 		break;
 
 	default:
-		str = (char*)malloc(5 * sizeof(char));
-		strcpy(str, "INCOR");
+		str = "OTHER";
 		break;
 
 	}
 
 	return str;
 }
+
+
 
 void PrintTcpPacket(char* Buffer, int Size)
 {
@@ -282,30 +308,26 @@ void PrintUdpPacket(char* Buffer, int Size)
 
 	UDP_HDR* udpheader = (UDP_HDR*)(Buffer + iphdrlen);
 
-	//fprintf(logfile, "\n\n***********************UDP Packet*************************\n");
-
 	PrintIPHeaderInfo(Buffer);
 
+	PrintToTextBoxWithNewLine("UDP Header");
+	PrintToTextBoxWithNewLine(std::string(" |-Source Port : " + std::to_string(ntohs(udpheader->source_port))).c_str());
+	PrintToTextBoxWithNewLine(std::string(" |-Destination Port : " + std::to_string(ntohs(udpheader->dest_port))).c_str());
+	PrintToTextBoxWithNewLine(std::string(" |-UDP Length : " + std::to_string(ntohs(udpheader->udp_length))).c_str());
+	PrintToTextBoxWithNewLine(std::string(" |-UDP Checksum : " + std::to_string(ntohs(udpheader->udp_checksum))).c_str());
 
-	/*fprintf(logfile, "\nUDP Header\n");
-	fprintf(logfile, " |-Source Port : %d\n", ntohs(udpheader->source_port));
-	fprintf(logfile, " |-Destination Port : %d\n", ntohs(udpheader->dest_port));
-	fprintf(logfile, " |-UDP Length : %d\n", ntohs(udpheader->udp_length));
-	fprintf(logfile, " |-UDP Checksum : %d\n", ntohs(udpheader->udp_checksum));
-
-	fprintf(logfile, "\n");
-	fprintf(logfile, "IP Header\n");
+	PrintToTextBoxWithNewLine("");
+	PrintToTextBoxWithNewLine("IP Header");
 
 	PrintData(Buffer, iphdrlen);
-	fprintf(logfile, "UDP Header\n");
 
+	PrintToTextBoxWithNewLine("UDP Header");
 	PrintData(Buffer + iphdrlen, sizeof(UDP_HDR));
 
-	fprintf(logfile, "Data Payload\n");
-
+	PrintToTextBoxWithNewLine("Data Payload");
 	PrintData(Buffer + iphdrlen + sizeof(UDP_HDR), (Size - sizeof(UDP_HDR) - iphdr->ip_header_len * 4));
 
-	fprintf(logfile, "\n###########################################################");*/
+	PrintToTextBoxWithNewLine(std::string(" -IP Version : " + std::to_string((unsigned int)iphdr->ip_version)).c_str());
 }
 
 void PrintIcmpPacket(char* Buffer, int Size)
@@ -317,77 +339,62 @@ void PrintIcmpPacket(char* Buffer, int Size)
 
 	ICMP_HDR* icmpheader = (ICMP_HDR*)(Buffer + iphdrlen);
 
-	//fprintf(logfile, "\n\n***********************ICMP Packet*************************\n");
 	PrintIPHeaderInfo(Buffer);
 
-
-	/*fprintf(logfile, "\n");
-
-	fprintf(logfile, "ICMP Header\n");
-	fprintf(logfile, " |-Type : %d", (unsigned int)(icmpheader->type));
+	PrintToTextBoxWithNewLine("ICMP Header");
+	PrintToTextBoxWithNewLine(std::string(" |-Type : " + std::to_string((unsigned int)(icmpheader->type))).c_str());
 
 	if ((unsigned int)(icmpheader->type) == 11)
 	{
-		fprintf(logfile, " (TTL Expired)\n");
+		PrintToTextBoxWithNewLine(" (TTL Expired)");
 	}
 	else if ((unsigned int)(icmpheader->type) == 0)
 	{
-		fprintf(logfile, " (ICMP Echo Reply)\n");
+		PrintToTextBoxWithNewLine(" (ICMP Echo Reply)");
 	}
 
-	fprintf(logfile, " |-Code : %d\n", (unsigned int)(icmpheader->code));
-	fprintf(logfile, " |-Checksum : %d\n", ntohs(icmpheader->checksum));
-	fprintf(logfile, " |-ID : %d\n", ntohs(icmpheader->id));
-	fprintf(logfile, " |-Sequence : %d\n", ntohs(icmpheader->seq));
-	fprintf(logfile, "\n");
+	PrintToTextBoxWithNewLine(std::string(" |-Code : " + std::to_string((unsigned int)(icmpheader->code))).c_str());
+	PrintToTextBoxWithNewLine(std::string(" |-Checksum : " + std::to_string(ntohs(icmpheader->checksum))).c_str());
+	PrintToTextBoxWithNewLine(std::string(" |-ID : " + std::to_string(ntohs(icmpheader->id))).c_str());
+	PrintToTextBoxWithNewLine(std::string(" |-Sequence : " + std::to_string(ntohs(icmpheader->seq))).c_str());
 
-	fprintf(logfile, "IP Header\n");
+	PrintToTextBoxWithNewLine("");
+
+	PrintToTextBoxWithNewLine("IP Header");
 	PrintData(Buffer, iphdrlen);
 
-	fprintf(logfile, "UDP Header\n");
+	PrintToTextBoxWithNewLine("UDP Header");
 	PrintData(Buffer + iphdrlen, sizeof(ICMP_HDR));
 
-	fprintf(logfile, "Data Payload\n");
+	PrintToTextBoxWithNewLine("Data Payload");
 	PrintData(Buffer + iphdrlen + sizeof(ICMP_HDR), (Size - sizeof(ICMP_HDR) - iphdr->ip_header_len * 4));
-
-	fprintf(logfile, "\n###########################################################");*/
 }
 
-void PrintData(char* data, int Size)
-{
-	//char a, line[17], c;
-	//int j;
+void PrintData(char* data, int size) {
+	char line[17];
+	int j;
+	std::string temp;
+	for (int i = 0; i < size; i++) {
+		char c = data[i];
+		char buffer[5];
+		sprintf(buffer, " %.2x", (unsigned char)c);
+		temp += buffer;
 
-	////loop over each character and print
-	//for (i = 0; i < Size; i++)
-	//{
-	//	c = data[i];
+		char a = (c >= 32 && c <= 128) ? (unsigned char)c : '.';
+		line[i % 16] = a;
 
-	//	//Print the hex value for every character , with a space. Important to make unsigned
-	//	fprintf(logfile, " %.2x", (unsigned char)c);
+		if ((i != 0 && (i + 1) % 16 == 0) || i == size - 1) {
+			line[i % 16 + 1] = '\0';
+			temp += "          ";
 
-	//	//Add the character to data line. Important to make unsigned
-	//	a = (c >= 32 && c <= 128) ? (unsigned char)c : '.';
+			for (j = strlen(line); j < 16; j++) {
+				temp += "   ";
+			}
+			temp += line;
+			PrintToTextBoxWithNewLine(temp.c_str());
+			temp = "";
+		}
+	}
 
-	//	line[i % 16] = a;
-
-	//	//if last character of a line , then print the line - 16 characters in 1 line
-	//	if ((i != 0 && (i + 1) % 16 == 0) || i == Size - 1)
-	//	{
-	//		line[i % 16 + 1] = '\0';
-
-	//		//print a big gap of 10 characters between hex and characters
-	//		fprintf(logfile, "          ");
-
-	//		//Print additional spaces for last lines which might be less than 16 characters in length
-	//		for (j = strlen(line); j < 16; j++)
-	//		{
-	//			fprintf(logfile, "   ");
-	//		}
-
-	//		fprintf(logfile, "%s \n", line);
-	//	}
-	//}
-
-	//fprintf(logfile, "\n");
+	PrintToTextBoxWithNewLine("");
 }

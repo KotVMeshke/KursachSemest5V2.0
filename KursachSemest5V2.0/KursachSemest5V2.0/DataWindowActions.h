@@ -81,14 +81,14 @@ LRESULT CALLBACK WndDataProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 		case OnOpenFileMenu:
 		{
 			DataTable.ClearTable();
-			ScannList = LoadListFromFile(GetFileName());
+			ScannList = LoadListFromFile(GetFileName(OFN_PATHMUSTEXIST|OFN_FILEMUSTEXIST));
 			InsertFullListIntoTable(ScannList);
 			MessageBox(hWnd, L"File was open", L"Menu works", MB_OK);
 			break;
 		}
 		case OnSaveAsFileMenu:
 		{
-			SaveListTofile(ScannList, GetFileName());
+			SaveListTofile(ScannList, GetFileName(OFN_PATHMUSTEXIST));
 			MessageBox(hWnd, L"File was save as", L"File info", MB_OK);
 
 			break;
@@ -97,7 +97,7 @@ LRESULT CALLBACK WndDataProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 		{
 			if (FileName[0] == L'\0')
 			{
-				SaveListTofile(ScannList, GetFileName());
+				SaveListTofile(ScannList, GetFileName(OFN_PATHMUSTEXIST));
 				MessageBox(hWnd, L"File was save as", L"File info", MB_OK);
 			}
 			else
@@ -177,7 +177,6 @@ LRESULT CALLBACK WndDataProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 		break;
 	case WM_CREATE:
 	{
-
 		AddMenuToDataWindow(hWnd);
 		SetColumsToTable(&DataTable, hWnd);
 		break;
@@ -193,6 +192,11 @@ LRESULT CALLBACK WndDataProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 			std::string selectedPackage = ScannList[selectedIndex];
 
 			HWND InformWindow = FindWindow(L"InformationWindow", NULL);
+			if (InformWindow == NULL)
+			{
+				HINSTANCE hInstance = GetModuleHandle(NULL);
+				InformWindow = CreateWindow(_T("InformationWindow"), _T("Package data"), WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, CW_USEDEFAULT, DEFAULT_WINDOW_DATA_WIDTH, DEFAULT_WINDOW_DATA_HEIGHT, NULL, NULL, hInstance, NULL);
+			}
 			ShowWindow(InformWindow, SW_SHOW);
 			SendMessage(InformWindow, WM_SHOW_PACKAGE, (WPARAM)selectedPackage.c_str(), selectedPackage.length());
 			
