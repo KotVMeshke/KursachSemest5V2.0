@@ -3,6 +3,9 @@
 #include <winsock2.h>
 #include <string>
 #include <vector>
+#include <iphlpapi.h>
+#include <ws2tcpip.h>
+#pragma comment(lib, "iphlpapi.lib")
 
 std::string SniffOnePackeg(SOCKET Sock, char* Buffer, std::string* fullData);
 std::string GetShortData(char* buffer, unsigned int size);
@@ -12,7 +15,7 @@ hostent GetLocalInterfaces();
 DWORD WINAPI Sniffing(LPVOID lpParam);
 std::string GetNameByNumber(unsigned int);
 void AddMenuToDataWindow(HWND window);
-
+std::vector<sockaddr_in> GetAllInterfaces();
 void SaveListTofile(std::vector<std::string>& strings,const std::string& filename);
 std::vector<std::string> LoadListFromFile(std::string filename);
 void InsertFullListIntoTable(std::vector<std::string> list);

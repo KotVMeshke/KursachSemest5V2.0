@@ -29,8 +29,12 @@ LRESULT CALLBACK WndStartProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPa
 	case WM_CREATE:
 	{
 		AddMenuToStartWindow(hWnd);
-		hostent local = GetLocalInterfaces();
-		buttons = CreateButtons(hWnd, local);
+		//hostent local = GetLocalInterfaces();
+
+		std::vector<sockaddr_in> addresses = GetAllInterfaces();
+		//buttons = CreateButtons(hWnd, local);
+		buttons = CreateButtons(hWnd, addresses);
+
 		break;
 	}
 	case WM_COMMAND:
@@ -44,7 +48,8 @@ LRESULT CALLBACK WndStartProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPa
 			}
 			buttons.clear();
 			InvalidateRect(hWnd, NULL, TRUE);
-			hostent local = GetLocalInterfaces();
+			//hostent local = GetLocalInterfaces();
+			std::vector<sockaddr_in> local = GetAllInterfaces();
 			buttons = CreateButtons(hWnd, local);
 			break;
 		}

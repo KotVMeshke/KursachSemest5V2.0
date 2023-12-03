@@ -76,6 +76,7 @@ LRESULT CALLBACK WndDataProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 		{
 		case OnExitMenu:
 		{
+			ScannList.clear();
 			PostQuitMessage(0);
 		}
 		case OnOpenFileMenu:
@@ -109,6 +110,7 @@ LRESULT CALLBACK WndDataProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 		}
 		case OnResetTable:
 		{
+			ScannList.clear();
 			DataTable.ClearTable();
 		}
 		break;
@@ -135,6 +137,7 @@ LRESULT CALLBACK WndDataProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 		}
 		case OnBackToStart:
 		{
+			ScannList.clear();
 			HMENU hMenu = GetMenu(hWnd);
 			EnableMenuItem(hMenu, OnStopMenu, MF_BYCOMMAND | MF_GRAYED);
 			EnableMenuItem(hMenu, OnStartMenu, MF_BYCOMMAND | MF_ENABLED);

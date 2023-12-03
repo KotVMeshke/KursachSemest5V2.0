@@ -3,6 +3,8 @@
 #include "stdio.h"
 #include "winsock2.h"
 #include <Windows.h>
+#include <iphlpapi.h>
+#include <ws2tcpip.h>
 #include <CommCtrl.h>
 #include "commctrl.h"
 #include <vector>
@@ -14,4 +16,5 @@
 #pragma comment(lib,"ws2_32.lib") 
 
 
-std::vector<HWND> CreateButtons(HWND hwnd, hostent local);
+//std::vector<HWND> CreateButtons(HWND hwnd, hostent local);
+std::vector<HWND> CreateButtons(HWND hwnd, std::vector<sockaddr_in> local);

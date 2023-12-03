@@ -8,10 +8,13 @@
 #include <stdlib.h>
 #include <iomanip>
 #include <fstream>
+#include <iphlpapi.h>
+#include <ws2tcpip.h>
 #include "functionsHeaders.h"
 #include "StructHeader.h"
 #include "DefinesHeader.h"
 
+#pragma comment(lib, "iphlpapi.lib")
 #pragma comment(lib,"ws2_32.lib") 
 
 int tcp = 0, udp = 0, icmp = 0, others = 0, igmp = 0, total = 0, i, j;
@@ -40,6 +43,113 @@ hostent GetLocalInterfaces()
 	return *local;
 }
 
+std::vector<sockaddr_in> GetAllInterfaces()
+{
+	std::vector<sockaddr_in> addresses;
+	ULONG bufferSize = 0;
+	PIP_ADAPTER_ADDRESSES pAddresses = nullptr;
+
+	DWORD result = GetAdaptersAddresses(AF_UNSPEC, GAA_FLAG_INCLUDE_PREFIX, nullptr,
+		nullptr, &bufferSize);
+
+	if (result == ERROR_BUFFER_OVERFLOW)
+	{
+		// Выделяем память для буфера
+		pAddresses = reinterpret_cast<IP_ADAPTER_ADDRESSES*>(new char[bufferSize]);
+
+		// Получаем информацию об интерфейсах
+		result = GetAdaptersAddresses(AF_UNSPEC, GAA_FLAG_INCLUDE_PREFIX, nullptr,
+			pAddresses, &bufferSize);
+
+		if (result == NO_ERROR)
+		{
+			// Обрабатываем каждый интерфейс
+			PIP_ADAPTER_ADDRESSES pCurrAddresses = pAddresses;
+			while (pCurrAddresses)
+			{
+				// Перебираем все IP-адреса для текущего интерфейса
+				IP_ADAPTER_UNICAST_ADDRESS* pUnicast = pCurrAddresses->FirstUnicastAddress;
+				while (pUnicast)
+				{
+					SOCKADDR* pAddr = pUnicast->Address.lpSockaddr;
+
+					// Проверяем, что это IPv4-адрес
+					if (pAddr->sa_family == AF_INET)
+					{
+						sockaddr_in* pSockAddrIn = reinterpret_cast<sockaddr_in*>(pAddr);
+						addresses.push_back(*pSockAddrIn);
+					}
+
+					pUnicast = pUnicast->Next;
+				}
+
+				// Переходим к следующему интерфейсу
+				pCurrAddresses = pCurrAddresses->Next;
+			}
+		}
+		else
+	
+		delete[] reinterpret_cast<char*>(pAddresses);
+	}
+	
+
+	return addresses;
+}
+
+//void PrepareForSniffing(SOCKET* sniffer,int InterfaceNumber)
+//{
+//	struct in_addr addr;
+//	int in;
+//
+//	char hostname[100];
+//	struct hostent* local;
+//	WSADATA wsa;
+//	
+//
+//	QueryPerformanceFrequency(&frequency);
+//	if (WSAStartup(MAKEWORD(2, 2), &wsa) != 0)
+//	{
+//		return;
+//	}
+//
+//	*sniffer = socket(AF_INET, SOCK_RAW, IPPROTO_IP);
+//	if (*sniffer == INVALID_SOCKET)
+//	{
+//		return;
+//	}
+//
+//	if (gethostname(hostname, sizeof(hostname)) == SOCKET_ERROR)
+//	{
+//		return;
+//	}
+//
+//	local = gethostbyname(hostname);
+//	if (local == NULL)
+//	{
+//		return ;
+//	}
+//
+//	for (i = 0; local->h_addr_list[i] != 0; ++i)
+//	{
+//		memcpy(&addr, local->h_addr_list[i], sizeof(struct in_addr));
+//	}
+//	memset(&dest, 0, sizeof(dest));
+//	memcpy(&dest.sin_addr.s_addr, local->h_addr_list[InterfaceNumber], sizeof(dest.sin_addr.s_addr));
+//	dest.sin_family = AF_INET;
+//	dest.sin_port = 0;
+//
+//	if (bind(*sniffer, (struct sockaddr*)&dest, sizeof(dest)) == SOCKET_ERROR)
+//	{
+//		return;
+//	}
+//
+//	j = 1;
+//	if (WSAIoctl(*sniffer, SIO_RCVALL, &j, sizeof(j), 0, 0, (LPDWORD)&in, 0, 0) == SOCKET_ERROR)
+//	{
+//		return;
+//	}
+//}
+
 void PrepareForSniffing(SOCKET* sniffer,int InterfaceNumber)
 {
 	struct in_addr addr;
@@ -48,7 +158,8 @@ void PrepareForSniffing(SOCKET* sniffer,int InterfaceNumber)
 	char hostname[100];
 	struct hostent* local;
 	WSADATA wsa;
-
+	
+	std::vector<sockaddr_in> addresess = GetAllInterfaces();
 	QueryPerformanceFrequency(&frequency);
 	if (WSAStartup(MAKEWORD(2, 2), &wsa) != 0)
 	{
@@ -61,7 +172,7 @@ void PrepareForSniffing(SOCKET* sniffer,int InterfaceNumber)
 		return;
 	}
 
-	if (gethostname(hostname, sizeof(hostname)) == SOCKET_ERROR)
+	/*if (gethostname(hostname, sizeof(hostname)) == SOCKET_ERROR)
 	{
 		return;
 	}
@@ -70,18 +181,18 @@ void PrepareForSniffing(SOCKET* sniffer,int InterfaceNumber)
 	if (local == NULL)
 	{
 		return ;
-	}
+	}*/
 
-	for (i = 0; local->h_addr_list[i] != 0; ++i)
-	{
-		memcpy(&addr, local->h_addr_list[i], sizeof(struct in_addr));
-	}
-	memset(&dest, 0, sizeof(dest));
-	memcpy(&dest.sin_addr.s_addr, local->h_addr_list[InterfaceNumber], sizeof(dest.sin_addr.s_addr));
-	dest.sin_family = AF_INET;
-	dest.sin_port = 0;
+	//for (i = 0; local->h_addr_list[i] != 0; ++i)
+	//{
+	//	memcpy(&addr, local->h_addr_list[i], sizeof(struct in_addr));
+	//}
+	//memset(&dest, 0, sizeof(dest));
+	//memcpy(&dest.sin_addr.s_addr, local->h_addr_list[InterfaceNumber], sizeof(dest.sin_addr.s_addr));
+	//dest.sin_family = AF_INET;
+	//dest.sin_port = 0;
 
-	if (bind(*sniffer, (struct sockaddr*)&dest, sizeof(dest)) == SOCKET_ERROR)
+	if (bind(*sniffer, (struct sockaddr*)&addresess[InterfaceNumber], sizeof(sockaddr_in)) == SOCKET_ERROR)
 	{
 		return;
 	}
