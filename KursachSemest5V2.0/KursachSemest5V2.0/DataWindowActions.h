@@ -6,6 +6,7 @@
 #include <CommCtrl.h>
 #include "commctrl.h"
 #include <fstream>
+#include "ThreadSafeQueue.h"
 #include "Table.h"
 #include "definesHeader.h"
 
@@ -14,14 +15,18 @@ HINSTANCE hInst;
 DWORD ThreadId;
 HWND ListWindow;
 Table DataTable;
+DWORD DataThreadsId[THREADS_NUMBER];
+HANDLE DataThreads[THREADS_NUMBER];
 std::vector<std::string> ScannList;
-HANDLE hThread;
+ThreadSafeQueue* ScannList2;
+HANDLE hThread[THREADS_NUMBER];
 
 SOCKET sniffer;
 
 TCHAR FileName[MAX_PATH];
 
 bool SniffingRule = true;
+bool PrintRule = true;
 LRESULT CALLBACK ListViewProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	switch (msg)
@@ -62,6 +67,22 @@ void SetColumsToTable(Table* table, HWND hWnd)
 	strcpy(colum_name, "Length");
 	table->AddNewColum(colum_name, 5, (DEFAULT_WINDOW_DATA_WIDTH - 50) / 10);
 	free(colum_name);
+}
+
+DWORD WINAPI ThreadInsertIntoTable(LPVOID lpParam)
+{
+	Table* DataTable = static_cast<Table*>(lpParam);
+	if (DataTable != nullptr)
+	{
+		while (PrintRule)
+		{
+			if (!ScannList2->isEmpty())
+			{
+				DataTable->InsertNewRow(const_cast<char*>(ScannList2->RemoveFromQueue().c_str()));
+			}
+		}
+	}
+	return 0;
 }
 
 LRESULT CALLBACK WndDataProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
@@ -116,18 +137,29 @@ LRESULT CALLBACK WndDataProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 		break;
 		case OnStartMenu:
 		{
+			ScannList2 = new ThreadSafeQueue();
 			HMENU hMenu = GetMenu(hWnd);
 			EnableMenuItem(hMenu, OnStopMenu, MF_BYCOMMAND | MF_ENABLED);
 			EnableMenuItem(hMenu, OnStartMenu, MF_BYCOMMAND | MF_GRAYED);
 			EnableMenuItem(hMenu, OnResetTable, MF_BYCOMMAND | MF_GRAYED);
 
 			SniffingRule = true;
+			PrintRule = true;
+			for (int i = 0; i < 1; i++)
+			{
+				hThread[i] = CreateThread(NULL, 0, Sniffing, (LPVOID)(&DataTable), NULL, &ThreadId);
 
-			hThread = CreateThread(NULL, 0, Sniffing, (LPVOID)(&DataTable), NULL, &ThreadId);
+			}
+			for (int i = 0; i < THREADS_NUMBER; i++)
+			{
+				DataThreads[i] = CreateThread(NULL, 0, ThreadInsertIntoTable, (LPVOID)&DataTable, NULL, &DataThreadsId[i]);
+			}
 		}
 		break;
 		case OnStopMenu:
 		{
+			PrintRule = false;
+			WaitForMultipleObjects(THREADS_NUMBER, DataThreads, TRUE, 100);
 			HMENU hMenu = GetMenu(hWnd);
 			EnableMenuItem(hMenu, OnStopMenu, MF_BYCOMMAND | MF_GRAYED);
 			EnableMenuItem(hMenu, OnStartMenu, MF_BYCOMMAND | MF_ENABLED);
@@ -144,8 +176,13 @@ LRESULT CALLBACK WndDataProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 			EnableMenuItem(hMenu, OnResetTable, MF_BYCOMMAND | MF_GRAYED);
 
 			SniffingRule = false;
-			WaitForSingleObject(hThread, 100);
-			CloseHandle(hThread);
+			WaitForMultipleObjects(1, hThread, TRUE, 100);
+
+			//WaitForSingleObject(hThread, 100);
+			for (int i = 0; i < 1; i++)
+			{
+				CloseHandle(hThread[i]);
+			}
 
 			ClearSocket(&sniffer);
 			sniffer = NULL;
@@ -158,7 +195,19 @@ LRESULT CALLBACK WndDataProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 		case SelectInterface:
 		{
 			sniffer = NULL;
-			PrepareForSniffing(&sniffer,lParam-INTERFACE_SELECTORS);
+			DataTable.ClearTable();
+			std::string result = PrepareForSniffing(&sniffer,lParam-INTERFACE_SELECTORS);
+			if (result != "correct")
+			{
+				int size = MultiByteToWideChar(CP_UTF8, 0, result.c_str(), -1, NULL, 0);
+				wchar_t* output = (wchar_t*)malloc(size * sizeof(wchar_t));
+				MultiByteToWideChar(CP_UTF8, 0, result.c_str(), -1, output, size);
+				MessageBox(hWnd, output, L"Something gone wrong", MB_OK);
+				HMENU hMenu = GetMenu(hWnd);
+				EnableMenuItem(hMenu, OnStopMenu, MF_BYCOMMAND | MF_ENABLED);
+				EnableMenuItem(hMenu, OnStartMenu, MF_BYCOMMAND | MF_GRAYED);
+				EnableMenuItem(hMenu, OnResetTable, MF_BYCOMMAND | MF_GRAYED);
+			}
 			break;
 		}
 		case OnStartScroll:
@@ -213,9 +262,15 @@ LRESULT CALLBACK WndDataProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 		DataTable.ResizeTable(rect);
 		break;
 	case WM_DESTROY:
+	{
+		SendMessage(hWnd, WM_COMMAND, OnStopMenu, 0);
+		ShowWindow(hWnd, SW_HIDE);
+		HWND StartWindow = FindWindow(L"StartWindow", NULL);
+		ShowWindow(StartWindow, SW_SHOW);
 		ClearSocket(&sniffer);
-		PostQuitMessage(0);
+		//PostQuitMessage(0);
 		break;
+	}
 	default:
 
 		return DefWindowProc(hWnd, message, wParam, lParam);

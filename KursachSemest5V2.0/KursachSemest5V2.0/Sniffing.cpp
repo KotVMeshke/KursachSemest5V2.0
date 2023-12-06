@@ -17,19 +17,17 @@
 #pragma comment(lib, "iphlpapi.lib")
 #pragma comment(lib,"ws2_32.lib") 
 
-int tcp = 0, udp = 0, icmp = 0, others = 0, igmp = 0, total = 0, i, j;
 struct sockaddr_in source, dest;
-char hex[2];
 unsigned int number_of_packege = 0;
 LARGE_INTEGER frequency;
 LARGE_INTEGER start;
 LARGE_INTEGER end;
 double elapsedSeconds;
-char* str;
 IPV4_HDR* iphdr;
 TCP_HDR* tcpheader;
 UDP_HDR* udpheader;
 ICMP_HDR* icmpheader;
+CRITICAL_SECTION critical;
 
 hostent GetLocalInterfaces()
 {
@@ -54,26 +52,18 @@ std::vector<sockaddr_in> GetAllInterfaces()
 
 	if (result == ERROR_BUFFER_OVERFLOW)
 	{
-		// Выделяем память для буфера
 		pAddresses = reinterpret_cast<IP_ADAPTER_ADDRESSES*>(new char[bufferSize]);
-
-		// Получаем информацию об интерфейсах
-		result = GetAdaptersAddresses(AF_UNSPEC, GAA_FLAG_INCLUDE_PREFIX, nullptr,
-			pAddresses, &bufferSize);
+		result = GetAdaptersAddresses(AF_UNSPEC, GAA_FLAG_INCLUDE_PREFIX, nullptr,pAddresses, &bufferSize);
 
 		if (result == NO_ERROR)
 		{
-			// Обрабатываем каждый интерфейс
 			PIP_ADAPTER_ADDRESSES pCurrAddresses = pAddresses;
 			while (pCurrAddresses)
 			{
-				// Перебираем все IP-адреса для текущего интерфейса
 				IP_ADAPTER_UNICAST_ADDRESS* pUnicast = pCurrAddresses->FirstUnicastAddress;
 				while (pUnicast)
 				{
 					SOCKADDR* pAddr = pUnicast->Address.lpSockaddr;
-
-					// Проверяем, что это IPv4-адрес
 					if (pAddr->sa_family == AF_INET)
 					{
 						sockaddr_in* pSockAddrIn = reinterpret_cast<sockaddr_in*>(pAddr);
@@ -83,7 +73,6 @@ std::vector<sockaddr_in> GetAllInterfaces()
 					pUnicast = pUnicast->Next;
 				}
 
-				// Переходим к следующему интерфейсу
 				pCurrAddresses = pCurrAddresses->Next;
 			}
 		}
@@ -150,11 +139,11 @@ std::vector<sockaddr_in> GetAllInterfaces()
 //	}
 //}
 
-void PrepareForSniffing(SOCKET* sniffer,int InterfaceNumber)
+std::string PrepareForSniffing(SOCKET* sniffer,int InterfaceNumber)
 {
 	struct in_addr addr;
 	int in;
-
+	//InitializeCriticalSection(&critical);
 	char hostname[100];
 	struct hostent* local;
 	WSADATA wsa;
@@ -163,13 +152,13 @@ void PrepareForSniffing(SOCKET* sniffer,int InterfaceNumber)
 	QueryPerformanceFrequency(&frequency);
 	if (WSAStartup(MAKEWORD(2, 2), &wsa) != 0)
 	{
-		return;
+		return "1";
 	}
 
 	*sniffer = socket(AF_INET, SOCK_RAW, IPPROTO_IP);
 	if (*sniffer == INVALID_SOCKET)
 	{
-		return;
+		return "2";
 	}
 
 	/*if (gethostname(hostname, sizeof(hostname)) == SOCKET_ERROR)
@@ -192,16 +181,19 @@ void PrepareForSniffing(SOCKET* sniffer,int InterfaceNumber)
 	//dest.sin_family = AF_INET;
 	//dest.sin_port = 0;
 
-	if (bind(*sniffer, (struct sockaddr*)&addresess[InterfaceNumber], sizeof(sockaddr_in)) == SOCKET_ERROR)
+	if (bind(*sniffer, (struct sockaddr*)&addresess[InterfaceNumber], sizeof(sockaddr)) == SOCKET_ERROR)
 	{
-		return;
+		int in = WSAGetLastError();
+		return "Incorrect ip or not permission";
 	}
 
-	j = 1;
-	if (WSAIoctl(*sniffer, SIO_RCVALL, &j, sizeof(j), 0, 0, (LPDWORD)&in, 0, 0) == SOCKET_ERROR)
+	int j = 1;
+	if (WSAIoctl(*sniffer, SIO_RCVALL, &j, sizeof(j), 0, 0, (LPDWORD)&InterfaceNumber, 0, 0) == SOCKET_ERROR)
 	{
-		return;
+		return "3";
 	}
+
+	return "correct";
 }
 
 void StartSniffing(SOCKET sniffer, char* Buffer)
@@ -234,7 +226,9 @@ std::string SniffOnePackeg(SOCKET Sock, char* Buffer, std::string* fullData)
 {
 	int mangobyte = 0;
 	std::string shortData;
+	//EnterCriticalSection(&critical);
 	mangobyte = recvfrom(Sock, Buffer, 65536, 0, 0, 0);
+	//LeaveCriticalSection(&critical);
 	if (mangobyte > 0)
 	{
 		*fullData = std::string(Buffer,mangobyte);
@@ -247,6 +241,7 @@ std::string SniffOnePackeg(SOCKET Sock, char* Buffer, std::string* fullData)
 
 void ClearSocket(SOCKET* socket)
 {
+	//DeleteCriticalSection(&critical);
 	closesocket(*socket);
 	WSACleanup();
 }

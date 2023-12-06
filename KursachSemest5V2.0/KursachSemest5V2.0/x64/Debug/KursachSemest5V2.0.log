@@ -1,6 +1,3 @@
-﻿  main.cpp
-C:\Users\dimon\OneDrive\Рабочий стол\Study\Универ\Курс 3\Семестр 5\СП\Курсач\KursachSemest5V2.0\KursachSemest5V2.0\DataWindowActions.h(161,38): warning C4244: аргумент: преобразование "LPARAM" в "int", возможна потеря данных
-C:\Users\dimon\OneDrive\Рабочий стол\Study\Универ\Курс 3\Семестр 5\СП\Курсач\KursachSemest5V2.0\KursachSemest5V2.0\InformationWindowActions.h(165,50): warning C4244: аргумент: преобразование "LPARAM" в "int", возможна потеря данных
-C:\Users\dimon\OneDrive\Рабочий стол\Study\Универ\Курс 3\Семестр 5\СП\Курсач\KursachSemest5V2.0\KursachSemest5V2.0\InformationWindowActions.h(390,19): warning C4267: =: преобразование из "size_t" в "int"; возможна потеря данных
-C:\Users\dimon\OneDrive\Рабочий стол\Study\Универ\Курс 3\Семестр 5\СП\Курсач\KursachSemest5V2.0\KursachSemest5V2.0\main.cpp(94,65): warning C4267: аргумент: преобразование из "size_t" в "unsigned int"; возможна потеря данных
+﻿  Table.cpp
+C:\Users\dimon\OneDrive\Рабочий стол\Study\Универ\Курс 3\Семестр 5\СП\Курсач\KursachSemest5V2.0\KursachSemest5V2.0\Table.cpp(219,27): warning C4244: +=: преобразование "double" в "int", возможна потеря данных
   KursachSemest5V2.0.vcxproj -> C:\Users\dimon\OneDrive\Рабочий стол\Study\Универ\Курс 3\Семестр 5\СП\Курсач\KursachSemest5V2.0\x64\Debug\KursachSemest5V2.0.exe

@@ -10,7 +10,7 @@
 std::string SniffOnePackeg(SOCKET Sock, char* Buffer, std::string* fullData);
 std::string GetShortData(char* buffer, unsigned int size);
 void ClearSocket(SOCKET*);
-void PrepareForSniffing(SOCKET*,int);
+std::string PrepareForSniffing(SOCKET*, int);
 hostent GetLocalInterfaces();
 DWORD WINAPI Sniffing(LPVOID lpParam);
 std::string GetNameByNumber(unsigned int);

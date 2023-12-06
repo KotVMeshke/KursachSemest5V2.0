@@ -115,6 +115,7 @@ void AddMenuToInformWindow(HWND window)
 void SafePackageToFile(std::string fileName, std::string package)
 {
 	std::ofstream outFile(fileName);
+	package.erase(std::remove(package.begin(), package.end(), '\n'), package.end());
 	if (outFile.is_open())
 	{
 		outFile.write(package.c_str(), package.length());
@@ -195,6 +196,7 @@ LRESULT CALLBACK WndInformProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lP
 void PrintUdpPacket(char* Buffer, int Size);
 void PrintIcmpPacket(char* Buffer, int Size);
 void PrintTcpPacket(char* Buffer, int Size);
+void PrintIgmpPacket(char* Buffer, int Size);
 void ProcessPacket(char* Buffer, int Size)
 {
 	IPV4_HDR* iphdr = (IPV4_HDR*)Buffer;
@@ -206,6 +208,7 @@ void ProcessPacket(char* Buffer, int Size)
 		break;
 
 	case IGMP:
+		PrintIgmpPacket(Buffer, Size);
 		break;
 
 	case TCP:
@@ -326,8 +329,6 @@ void PrintUdpPacket(char* Buffer, int Size)
 
 	PrintToTextBoxWithNewLine("Data Payload");
 	PrintData(Buffer + iphdrlen + sizeof(UDP_HDR), (Size - sizeof(UDP_HDR) - iphdr->ip_header_len * 4));
-
-	PrintToTextBoxWithNewLine(std::string(" -IP Version : " + std::to_string((unsigned int)iphdr->ip_version)).c_str());
 }
 
 void PrintIcmpPacket(char* Buffer, int Size)
@@ -369,6 +370,77 @@ void PrintIcmpPacket(char* Buffer, int Size)
 	PrintToTextBoxWithNewLine("Data Payload");
 	PrintData(Buffer + iphdrlen + sizeof(ICMP_HDR), (Size - sizeof(ICMP_HDR) - iphdr->ip_header_len * 4));
 }
+
+void PrintIgmpPacket(char* Buffer, int Size)
+{
+	unsigned short iphdrlen;
+
+	sockaddr_in addr;
+	IPV4_HDR* iphdr = (IPV4_HDR*)Buffer;
+	iphdrlen = iphdr->ip_header_len * 4;
+
+	IGMP_HDR* igmpheader = (IGMP_HDR*)(Buffer + iphdrlen);
+
+
+	memset(&addr, 0, sizeof(addr));
+	addr.sin_addr.s_addr = igmpheader->group_address;
+
+	PrintIPHeaderInfo(Buffer);
+
+	PrintToTextBoxWithNewLine("IGMP Header");
+	PrintToTextBoxWithNewLine(std::string(" |-Message type : " + std::to_string((unsigned int)(igmpheader->message_type))).c_str());
+	PrintToTextBoxWithNewLine(std::string(" |-Max resp time : " + std::to_string((unsigned int)(igmpheader->max_resp_time))).c_str());
+
+	switch ((igmpheader->message_type))
+	{
+	case 0x11:
+	{
+		PrintToTextBoxWithNewLine(" (Membership Query) ");
+		break;
+	}
+	case 0x12:
+	{
+		PrintToTextBoxWithNewLine(" (Membership Report V1) ");
+		break;
+	}
+	case 0x16:
+	{
+		PrintToTextBoxWithNewLine(" (Membership Report V2) ");
+		break;
+	}case 0x22:
+	{
+		PrintToTextBoxWithNewLine(" (Membership Report V3) ");
+		break;
+	}case 0x17:
+	{
+		PrintToTextBoxWithNewLine(" (Leave Group) ");
+		break;
+	}
+	default:
+	{		
+		PrintToTextBoxWithNewLine(" (Incorrect message) ");
+		break;
+	}
+
+	}
+	
+
+	PrintToTextBoxWithNewLine(std::string(" |-Checksum : " + std::to_string(ntohs(igmpheader->checksum))).c_str());
+	PrintToTextBoxWithNewLine(std::string(" |-Groupe address : " + std::string(inet_ntoa(addr.sin_addr))).c_str());
+
+
+	PrintToTextBoxWithNewLine("");
+
+	PrintToTextBoxWithNewLine("IP Header");
+	PrintData(Buffer, iphdrlen);
+
+	PrintToTextBoxWithNewLine("IGMP Header");
+	PrintData(Buffer + iphdrlen, sizeof(IGMP_HDR));
+
+	PrintToTextBoxWithNewLine("Data Payload");
+	PrintData(Buffer + iphdrlen + sizeof(IGMP_HDR), (Size - sizeof(IGMP_HDR) - iphdr->ip_header_len * 4));
+}
+
 
 void PrintData(char* data, int size) {
 	char line[17];

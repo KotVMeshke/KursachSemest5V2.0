@@ -12,6 +12,8 @@
 #define TABLE_OFFSET						30
 #define ID_TABLE							101
 
+#define THREADS_NUMBER						10
+	
 #define WM_SHOW_PACKAGE						(WM_USER + 1)
 
 #define SIO_RCVALL _WSAIOW(IOC_VENDOR,1) 

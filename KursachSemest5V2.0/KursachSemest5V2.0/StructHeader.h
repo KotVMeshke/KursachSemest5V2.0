@@ -64,3 +64,11 @@ typedef struct icmp_hdr
 	USHORT id;
 	USHORT seq;
 } ICMP_HDR;
+
+typedef struct igmp_hdr
+{
+	BYTE message_type;
+	BYTE max_resp_time;
+	unsigned short checksum;
+	unsigned int group_address;
+} IGMP_HDR;

@@ -65,6 +65,7 @@ bool Table::InsertNewRow(char* values)
 			}
 			token = strtok(NULL, ",");
 			i++;
+			
 		}
 	}
 	catch (...)

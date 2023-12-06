@@ -27,8 +27,9 @@ DWORD WINAPI Sniffing(LPVOID lpParam)
 	while (SniffingRule)
 	{
 		std::string data = SniffOnePackeg(sniffer, Buffer, &fullData);
-		DataTable->InsertNewRow(const_cast<char*>(data.c_str()));
+		//DataTable->InsertNewRow(const_cast<char*>(data.c_str()));
 		ScannList.push_back(fullData);
+		ScannList2->InsertIntoQueue(data);
 	}
 
 	return 0;
