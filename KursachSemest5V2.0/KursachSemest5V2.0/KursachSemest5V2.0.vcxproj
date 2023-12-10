@@ -30,11 +30,9 @@
     <ClInclude Include="ThreadSafeQueue.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="DataWindowActions.cpp" />
     <ClCompile Include="Interface.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="Sniffing.cpp" />
-    <ClCompile Include="StartWindowActions.cpp" />
     <ClCompile Include="Table.cpp" />
     <ClCompile Include="ThreadSafeQueue.cpp" />
   </ItemGroup>

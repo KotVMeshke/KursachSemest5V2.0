@@ -19,31 +19,31 @@ Table::~Table()
 
 	free(colum_width);
 }
-HWND Table::CreateListView(HWND parent_window, HMENU table_id,RECT list_size, int min_list_width, LONG_PTR ListViewProc)
+HWND Table::CreateListView(HWND parent_window, HMENU table_id,RECT list_size, int min_list_width, SUBCLASSPROC ListViewProc)
 {
 	HINSTANCE hInst = (HINSTANCE)GetWindowLongPtr(parent_window, GWLP_HINSTANCE);
 	this->parent_window = parent_window;
 	list_window = CreateWindow(WC_LISTVIEW, _T(""),
-		WS_VISIBLE | WS_CHILD | WS_BORDER | LVS_REPORT | LVS_AUTOARRANGE | LVS_SINGLESEL,
+		WS_VISIBLE | WS_CHILD | WS_BORDER | LVS_REPORT | LVS_AUTOARRANGE | LVS_SINGLESEL|LVS_OWNERDATA,
 		list_size.left, list_size.top, list_size.right, list_size.bottom,
 		parent_window, table_id, hInst, 0);
 	list_width = list_size.right - list_size.left;
 	this->min_list_width = min_list_width;
-	ListView_SetExtendedListViewStyle(list_window,   LVS_EX_FULLROWSELECT);
-	if(ListViewProc != NULL)
-		oldListViewProc = SetWindowLongPtr(list_window, GWLP_WNDPROC, ListViewProc);
+	ListView_SetExtendedListViewStyle(list_window,   LVS_EX_FULLROWSELECT|LVS_EX_DOUBLEBUFFER);
+	ListView_SetItemCount(list_window, 0);
 	return list_window;
 }
 
 void Table::ClearTable() 
 {
 	ListView_DeleteAllItems(this->list_window);
+	ListView_SetItemCount(this->list_window, 0);
 	row_numbers = 0;
 }
 
 bool Table::InsertNewRow(char* values)
 {
-	char* token;
+	/*char* token;
 	char* word;
 	char* temp = (char*)malloc(sizeof(char) * strlen(values));
 	strcpy(temp, values);
@@ -73,7 +73,8 @@ bool Table::InsertNewRow(char* values)
 		MessageBox(parent_window, _T("Error"), _T("Row create error"), MB_OK);
 		return false;
 	}
-	row_numbers++;
+	row_numbers++;*/
+
 
 	return true;
 }
@@ -210,7 +211,7 @@ bool Table::ResizeTable(RECT window_size)
 		{
 			if (i == colum_numbers - 1)
 			{
-				ListView_SetColumnWidth(this->list_window, i, list_width-last_pos);
+				ListView_SetColumnWidth(this->list_window, i, list_width-last_pos-20);
 			}
 			else
 			{
@@ -231,4 +232,110 @@ void Table::SetScrollSettings(bool condition)
 	scroll = condition;
 }
 
+void Table::SetNewNumberOfRows(int number)
+{
+	ListView_SetItemCountEx(this->list_window, number, LVSICF_NOSCROLL|LVSICF_NOINVALIDATEALL);
+}
 
+
+void Table::DisplayData(std::vector<std::string> data, int size)
+{
+	if (size > 0)
+		if (this->scroll)
+			ListView_EnsureVisible(list_window, size-1, FALSE);
+}
+
+void Table::InsertData(LPARAM lParam, std::vector<std::string> test)
+{
+	LPNMHDR pNMHDR = (LPNMHDR)lParam;
+	if (pNMHDR->idFrom == ID_TABLE)
+	{
+		switch (pNMHDR->code)
+		{
+		case LVN_GETDISPINFO:
+		{
+
+			NMLVDISPINFO* pDispInfo = (NMLVDISPINFO*)lParam;
+			int index = pDispInfo->item.iItem;
+
+			if (test.size() >= index)
+			{
+
+
+				switch (pDispInfo->item.iSubItem)
+				{
+				case 0:
+				{
+
+					std::string str = GetWord(test[index], 0);
+					std::wstring widestr = std::wstring(str.begin(), str.end());
+					wchar_t* output = new wchar_t[widestr.length() + 1];
+					wcscpy_s(output, widestr.length() + 1, widestr.c_str());
+					pDispInfo->item.pszText = output;
+					break;
+				}
+				case 1:
+				{
+					std::string str = GetWord(test[index], 1);
+					std::wstring widestr = std::wstring(str.begin(), str.end());
+					wchar_t* output = new wchar_t[widestr.length() + 1];
+					wcscpy_s(output, widestr.length() + 1, widestr.c_str());
+					pDispInfo->item.pszText = output;
+
+					break;
+				}
+				case 2:
+				{
+					std::string str = GetWord(test[index], 2);
+					std::wstring widestr = std::wstring(str.begin(), str.end());
+					wchar_t* output = new wchar_t[widestr.length() + 1];
+					wcscpy_s(output, widestr.length() + 1, widestr.c_str());
+					pDispInfo->item.pszText = output;
+
+					break;
+				}
+				case 3:
+				{
+					std::string str = GetWord(test[index], 3);
+					std::wstring widestr = std::wstring(str.begin(), str.end());
+					wchar_t* output = new wchar_t[widestr.length() + 1];
+					wcscpy_s(output, widestr.length() + 1, widestr.c_str());
+
+					pDispInfo->item.pszText = output;
+
+					break;
+				}
+				case 4:
+				{
+					std::string str = GetWord(test[index], 4);
+					std::wstring widestr = std::wstring(str.begin(), str.end());
+					wchar_t* output = new wchar_t[widestr.length() + 1];
+					wcscpy_s(output, widestr.length() + 1, widestr.c_str());
+
+					pDispInfo->item.pszText = output;
+
+					break;
+				}
+				case 5:
+				{
+					std::string str = GetWord(test[index], 5);
+					std::wstring widestr = std::wstring(str.begin(), str.end());
+					wchar_t* output = new wchar_t[widestr.length() + 1];
+					wcscpy_s(output, widestr.length() + 1, widestr.c_str());
+
+					pDispInfo->item.pszText = output;
+
+					break;
+				}
+				default:
+					break;
+				}
+			}
+
+
+			UpdateWindow(this->list_window);
+		}
+		break;
+		}
+	}
+}

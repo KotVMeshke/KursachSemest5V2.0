@@ -18,7 +18,7 @@
 #pragma comment(lib,"ws2_32.lib") 
 
 struct sockaddr_in source, dest;
-unsigned int number_of_packege = 0;
+unsigned int number_of_package = 0;
 LARGE_INTEGER frequency;
 LARGE_INTEGER start;
 LARGE_INTEGER end;
@@ -43,6 +43,8 @@ hostent GetLocalInterfaces()
 
 std::vector<sockaddr_in> GetAllInterfaces()
 {
+	WSADATA wsa;
+	WSAStartup(MAKEWORD(2, 2), &wsa);
 	std::vector<sockaddr_in> addresses;
 	ULONG bufferSize = 0;
 	PIP_ADAPTER_ADDRESSES pAddresses = nullptr;
@@ -67,6 +69,22 @@ std::vector<sockaddr_in> GetAllInterfaces()
 					if (pAddr->sa_family == AF_INET)
 					{
 						sockaddr_in* pSockAddrIn = reinterpret_cast<sockaddr_in*>(pAddr);
+
+						SOCKET sock = socket(AF_INET, SOCK_RAW, IPPROTO_IP);
+						if (sock == INVALID_SOCKET)
+						{
+							pUnicast = pUnicast->Next;
+
+							continue;
+						}
+
+						if (bind(sock, (struct sockaddr*)pSockAddrIn, sizeof(sockaddr)) == SOCKET_ERROR)
+						{
+							pUnicast = pUnicast->Next;
+
+							continue;
+						}
+
 						addresses.push_back(*pSockAddrIn);
 					}
 
@@ -85,65 +103,10 @@ std::vector<sockaddr_in> GetAllInterfaces()
 	return addresses;
 }
 
-//void PrepareForSniffing(SOCKET* sniffer,int InterfaceNumber)
-//{
-//	struct in_addr addr;
-//	int in;
-//
-//	char hostname[100];
-//	struct hostent* local;
-//	WSADATA wsa;
-//	
-//
-//	QueryPerformanceFrequency(&frequency);
-//	if (WSAStartup(MAKEWORD(2, 2), &wsa) != 0)
-//	{
-//		return;
-//	}
-//
-//	*sniffer = socket(AF_INET, SOCK_RAW, IPPROTO_IP);
-//	if (*sniffer == INVALID_SOCKET)
-//	{
-//		return;
-//	}
-//
-//	if (gethostname(hostname, sizeof(hostname)) == SOCKET_ERROR)
-//	{
-//		return;
-//	}
-//
-//	local = gethostbyname(hostname);
-//	if (local == NULL)
-//	{
-//		return ;
-//	}
-//
-//	for (i = 0; local->h_addr_list[i] != 0; ++i)
-//	{
-//		memcpy(&addr, local->h_addr_list[i], sizeof(struct in_addr));
-//	}
-//	memset(&dest, 0, sizeof(dest));
-//	memcpy(&dest.sin_addr.s_addr, local->h_addr_list[InterfaceNumber], sizeof(dest.sin_addr.s_addr));
-//	dest.sin_family = AF_INET;
-//	dest.sin_port = 0;
-//
-//	if (bind(*sniffer, (struct sockaddr*)&dest, sizeof(dest)) == SOCKET_ERROR)
-//	{
-//		return;
-//	}
-//
-//	j = 1;
-//	if (WSAIoctl(*sniffer, SIO_RCVALL, &j, sizeof(j), 0, 0, (LPDWORD)&in, 0, 0) == SOCKET_ERROR)
-//	{
-//		return;
-//	}
-//}
-
 std::string PrepareForSniffing(SOCKET* sniffer,int InterfaceNumber)
 {
 	struct in_addr addr;
 	int in;
-	//InitializeCriticalSection(&critical);
 	char hostname[100];
 	struct hostent* local;
 	WSADATA wsa;
@@ -161,26 +124,6 @@ std::string PrepareForSniffing(SOCKET* sniffer,int InterfaceNumber)
 		return "2";
 	}
 
-	/*if (gethostname(hostname, sizeof(hostname)) == SOCKET_ERROR)
-	{
-		return;
-	}
-
-	local = gethostbyname(hostname);
-	if (local == NULL)
-	{
-		return ;
-	}*/
-
-	//for (i = 0; local->h_addr_list[i] != 0; ++i)
-	//{
-	//	memcpy(&addr, local->h_addr_list[i], sizeof(struct in_addr));
-	//}
-	//memset(&dest, 0, sizeof(dest));
-	//memcpy(&dest.sin_addr.s_addr, local->h_addr_list[InterfaceNumber], sizeof(dest.sin_addr.s_addr));
-	//dest.sin_family = AF_INET;
-	//dest.sin_port = 0;
-
 	if (bind(*sniffer, (struct sockaddr*)&addresess[InterfaceNumber], sizeof(sockaddr)) == SOCKET_ERROR)
 	{
 		int in = WSAGetLastError();
@@ -190,6 +133,7 @@ std::string PrepareForSniffing(SOCKET* sniffer,int InterfaceNumber)
 	int j = 1;
 	if (WSAIoctl(*sniffer, SIO_RCVALL, &j, sizeof(j), 0, 0, (LPDWORD)&InterfaceNumber, 0, 0) == SOCKET_ERROR)
 	{
+		int in = WSAGetLastError();
 		return "3";
 	}
 
@@ -211,7 +155,7 @@ void StartSniffing(SOCKET sniffer, char* Buffer)
 
 		if (mangobyte > 0)
 		{
-			number_of_packege++;
+			number_of_package++;
 		}
 		else
 		{
@@ -222,13 +166,16 @@ void StartSniffing(SOCKET sniffer, char* Buffer)
 	free(Buffer);
 }
 
+void SetNumberOfPackagesToZero()
+{
+	number_of_package = 0;
+}
+
 std::string SniffOnePackeg(SOCKET Sock, char* Buffer, std::string* fullData)
 {
 	int mangobyte = 0;
 	std::string shortData;
-	//EnterCriticalSection(&critical);
 	mangobyte = recvfrom(Sock, Buffer, 65536, 0, 0, 0);
-	//LeaveCriticalSection(&critical);
 	if (mangobyte > 0)
 	{
 		*fullData = std::string(Buffer,mangobyte);
@@ -246,14 +193,14 @@ void ClearSocket(SOCKET* socket)
 	WSACleanup();
 }
 
-
 std::string GetShortData(char* buffer, unsigned int size)
 {
-	number_of_packege++;
+	number_of_package++;
 
 	std::string shortData = "";
 	iphdr = (IPV4_HDR*)buffer;
-	if (number_of_packege == 1)
+	TCP_HDR* udp = (TCP_HDR*)(buffer+ iphdr->ip_header_len*4);
+	if (number_of_package == 1)
 	{
 		QueryPerformanceCounter(&start);
 		double elapsedSeconds = 0;
@@ -270,7 +217,7 @@ std::string GetShortData(char* buffer, unsigned int size)
 	std::string source_addr = inet_ntoa(source.sin_addr);
 	std::string dest_addr = inet_ntoa(dest.sin_addr);
 
-	shortData.append(std::to_string(number_of_packege));
+	shortData.append(std::to_string(number_of_package));
 	shortData.append(",");
 	shortData.append(std::to_string(elapsedSeconds));
 	shortData.append(",");
@@ -278,6 +225,9 @@ std::string GetShortData(char* buffer, unsigned int size)
 	shortData.append(",");
 	shortData.append(dest_addr);
 	shortData.append(",");
+	if (iphdr->ip_protocol == TCP &&(ntohs(udp->source_port)) == 80 || ntohs(udp->dest_port) == 80)
+		shortData.append("HTTP");
+	else
 	shortData.append(GetNameByNumber((unsigned int)iphdr->ip_protocol));
 	shortData.append(",");
 	shortData.append(std::to_string(ntohs(iphdr->ip_total_length)));

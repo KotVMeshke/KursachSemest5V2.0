@@ -13,6 +13,8 @@
 #define ID_TABLE							101
 
 #define THREADS_NUMBER						10
+
+#define ID_TIMER							42
 	
 #define WM_SHOW_PACKAGE						(WM_USER + 1)
 

@@ -133,7 +133,8 @@ std::string GetTextBoxString()
 		delete[] buffer;
 		return text;
 	}
-	else {
+	else 
+	{
 		return "";
 	}
 }

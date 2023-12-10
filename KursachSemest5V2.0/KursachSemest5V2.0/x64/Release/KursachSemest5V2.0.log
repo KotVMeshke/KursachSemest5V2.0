@@ -1,0 +1,28 @@
+﻿  DataWindowActions.cpp
+  Interface.cpp
+C:\Users\dimon\OneDrive\Рабочий стол\Study\Универ\Курс 3\Семестр 5\СП\Курсач\KursachSemest5V2.0\KursachSemest5V2.0\Interface.cpp(43,11): warning C4267: инициализация: преобразование из "size_t" в "int"; возможна потеря данных
+C:\Users\dimon\OneDrive\Рабочий стол\Study\Универ\Курс 3\Семестр 5\СП\Курсач\KursachSemest5V2.0\KursachSemest5V2.0\Interface.cpp(44,83): warning C4267: аргумент: преобразование из "size_t" в "int"; возможна потеря данных
+C:\Users\dimon\OneDrive\Рабочий стол\Study\Универ\Курс 3\Семестр 5\СП\Курсач\KursachSemest5V2.0\KursachSemest5V2.0\Interface.cpp(53,17): warning C4267: инициализация: преобразование из "size_t" в "int"; возможна потеря данных
+C:\Users\dimon\OneDrive\Рабочий стол\Study\Универ\Курс 3\Семестр 5\СП\Курсач\KursachSemest5V2.0\KursachSemest5V2.0\Interface.cpp(70,27): warning C4312: приведение типов: преобразование из "int" в "HMENU" большего размера
+C:\Users\dimon\OneDrive\Рабочий стол\Study\Универ\Курс 3\Семестр 5\СП\Курсач\KursachSemest5V2.0\KursachSemest5V2.0\Interface.cpp(58,13): warning C4101: addr: неиспользованная локальная переменная
+  main.cpp
+C:\Users\dimon\OneDrive\Рабочий стол\Study\Универ\Курс 3\Семестр 5\СП\Курсач\KursachSemest5V2.0\KursachSemest5V2.0\DataWindowActions.h(256,61): warning C4244: аргумент: преобразование "LPARAM" в "int", возможна потеря данных
+C:\Users\dimon\OneDrive\Рабочий стол\Study\Универ\Курс 3\Семестр 5\СП\Курсач\KursachSemest5V2.0\KursachSemest5V2.0\DataWindowActions.h(291,13): warning C4267: инициализация: преобразование из "size_t" в "int"; возможна потеря данных
+C:\Users\dimon\OneDrive\Рабочий стол\Study\Универ\Курс 3\Семестр 5\СП\Курсач\KursachSemest5V2.0\KursachSemest5V2.0\InformationWindowActions.h(167,50): warning C4244: аргумент: преобразование "LPARAM" в "int", возможна потеря данных
+C:\Users\dimon\OneDrive\Рабочий стол\Study\Универ\Курс 3\Семестр 5\СП\Курсач\KursachSemest5V2.0\KursachSemest5V2.0\InformationWindowActions.h(463,19): warning C4267: =: преобразование из "size_t" в "int"; возможна потеря данных
+C:\Users\dimon\OneDrive\Рабочий стол\Study\Универ\Курс 3\Семестр 5\СП\Курсач\KursachSemest5V2.0\KursachSemest5V2.0\main.cpp(95,65): warning C4267: аргумент: преобразование из "size_t" в "unsigned int"; возможна потеря данных
+C:\Users\dimon\OneDrive\Рабочий стол\Study\Универ\Курс 3\Семестр 5\СП\Курсач\KursachSemest5V2.0\KursachSemest5V2.0\main.cpp(99,40): warning C4267: аргумент: преобразование из "size_t" в "int"; возможна потеря данных
+  Sniffing.cpp
+C:\Users\dimon\OneDrive\Рабочий стол\Study\Универ\Курс 3\Семестр 5\СП\Курсач\KursachSemest5V2.0\KursachSemest5V2.0\Sniffing.cpp(147,7): warning C4101: hostname: неиспользованная локальная переменная
+C:\Users\dimon\OneDrive\Рабочий стол\Study\Универ\Курс 3\Семестр 5\СП\Курсач\KursachSemest5V2.0\KursachSemest5V2.0\Sniffing.cpp(144,17): warning C4101: addr: неиспользованная локальная переменная
+C:\Users\dimon\OneDrive\Рабочий стол\Study\Универ\Курс 3\Семестр 5\СП\Курсач\KursachSemest5V2.0\KursachSemest5V2.0\Sniffing.cpp(148,18): warning C4101: local: неиспользованная локальная переменная
+C:\Users\dimon\OneDrive\Рабочий стол\Study\Универ\Курс 3\Семестр 5\СП\Курсач\KursachSemest5V2.0\KursachSemest5V2.0\Sniffing.cpp(145,6): warning C4101: in: неиспользованная локальная переменная
+  StartWindowActions.cpp
+  Table.cpp
+C:\Users\dimon\OneDrive\Рабочий стол\Study\Универ\Курс 3\Семестр 5\СП\Курсач\KursachSemest5V2.0\KursachSemest5V2.0\Table.cpp(223,27): warning C4244: +=: преобразование "double" в "int", возможна потеря данных
+  ThreadSafeQueue.cpp
+  Создание кода
+  Previous IPDB not found, fall back to full compilation.
+  All 610 functions were compiled because no usable IPDB/IOBJ from previous compilation was found.
+  Создание кода завершено
+  KursachSemest5V2.0.vcxproj -> C:\Users\dimon\OneDrive\Рабочий стол\Study\Универ\Курс 3\Семестр 5\СП\Курсач\KursachSemest5V2.0\x64\Release\KursachSemest5V2.0.exe

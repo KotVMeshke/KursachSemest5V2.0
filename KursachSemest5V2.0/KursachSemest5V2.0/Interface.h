@@ -15,6 +15,4 @@
 
 #pragma comment(lib,"ws2_32.lib") 
 
-
-//std::vector<HWND> CreateButtons(HWND hwnd, hostent local);
 std::vector<HWND> CreateButtons(HWND hwnd, std::vector<sockaddr_in> local);

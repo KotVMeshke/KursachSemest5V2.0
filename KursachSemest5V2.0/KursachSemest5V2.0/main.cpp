@@ -20,16 +20,14 @@ HWND InformationWindow;
 
 DWORD WINAPI Sniffing(LPVOID lpParam)
 {
-	Table* DataTable = static_cast<Table*>(lpParam);
 	char* Buffer = (char*)malloc(65536 * sizeof(char));
 	std::string fullData;
 
 	while (SniffingRule)
 	{
 		std::string data = SniffOnePackeg(sniffer, Buffer, &fullData);
-		//DataTable->InsertNewRow(const_cast<char*>(data.c_str()));
 		ScannList.push_back(fullData);
-		ScannList2->InsertIntoQueue(data);
+		test.push_back(data);
 	}
 
 	return 0;
@@ -93,8 +91,9 @@ void InsertFullListIntoTable(std::vector<std::string> list)
 	for (const auto& str : list)
 	{
 		temp = GetShortData(const_cast<char*>(str.c_str()), str.length());
-		DataTable.InsertNewRow(const_cast<char*>(temp.c_str()));
+		test.push_back(temp);
 	}
+	DataTable.SetNewNumberOfRows(test.size());
 }
 
 std::string GetFileName(DWORD tags)

@@ -9,40 +9,73 @@
 #include "ThreadSafeQueue.h"
 #include "Table.h"
 #include "definesHeader.h"
+#include <sstream>
 
 HINSTANCE hInst;
 
 DWORD ThreadId;
 HWND ListWindow;
 Table DataTable;
-DWORD DataThreadsId[THREADS_NUMBER];
-HANDLE DataThreads[THREADS_NUMBER];
 std::vector<std::string> ScannList;
-ThreadSafeQueue* ScannList2;
-HANDLE hThread[THREADS_NUMBER];
+HANDLE hThread;
 
 SOCKET sniffer;
 
 TCHAR FileName[MAX_PATH];
-
+std::vector<std::string>test;
 bool SniffingRule = true;
 bool PrintRule = true;
-LRESULT CALLBACK ListViewProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
+
+std::string GetWord(std::string str, int number);
+
+void GetSelectedPackage(LPARAM lParam)
 {
-	switch (msg)
+	NMHDR* nmhdr = reinterpret_cast<NMHDR*>(lParam);
+	if (nmhdr->code == (DWORD)(NM_CLICK) && nmhdr->idFrom == ID_TABLE)
+	{
+		NMITEMACTIVATE* nmitem = reinterpret_cast<NMITEMACTIVATE*>(lParam);
+
+		int selectedIndex = nmitem->iItem;
+		std::string selectedPackage = ScannList[selectedIndex];
+
+		HWND InformWindow = FindWindow(L"InformationWindow", NULL);
+		if (InformWindow == NULL)
+		{
+			HINSTANCE hInstance = GetModuleHandle(NULL);
+			InformWindow = CreateWindow(_T("InformationWindow"), _T("Package data"), WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, CW_USEDEFAULT, DEFAULT_WINDOW_DATA_WIDTH, DEFAULT_WINDOW_DATA_HEIGHT, NULL, NULL, hInstance, NULL);
+		}
+		ShowWindow(InformWindow, SW_SHOW);
+		SendMessage(InformWindow, WM_SHOW_PACKAGE, (WPARAM)selectedPackage.c_str(), selectedPackage.length());
+	}
+}
+
+LRESULT CALLBACK ListViewProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam, UINT_PTR uIdSubclass, DWORD_PTR dwRefData)
+{
+	switch (uMsg)
 	{
 	case WM_NOTIFY:
 	{
 
+		LPNMHDR pNMHDR = (LPNMHDR)lParam;
+		if (pNMHDR->idFrom == ID_TABLE)
+		{
+			switch (pNMHDR->code)
+			{
+			case LVN_GETDISPINFO:
+			{
+			}
+			break;
+			}
+		}
 	}
-	break;
 
 	default:
-		return CallWindowProc((WNDPROC)DataTable.oldListViewProc, hwnd, msg, wParam, lParam);
+	{
+		return CallWindowProc((WNDPROC)dwRefData, hWnd, uMsg, wParam, lParam);
 	}
-
-	return 0;
+	}
 }
+
 
 void SetColumsToTable(Table* table, HWND hWnd)
 {
@@ -69,22 +102,6 @@ void SetColumsToTable(Table* table, HWND hWnd)
 	free(colum_name);
 }
 
-DWORD WINAPI ThreadInsertIntoTable(LPVOID lpParam)
-{
-	Table* DataTable = static_cast<Table*>(lpParam);
-	if (DataTable != nullptr)
-	{
-		while (PrintRule)
-		{
-			if (!ScannList2->isEmpty())
-			{
-				DataTable->InsertNewRow(const_cast<char*>(ScannList2->RemoveFromQueue().c_str()));
-			}
-		}
-	}
-	return 0;
-}
-
 LRESULT CALLBACK WndDataProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
 	HDC hdc;
@@ -98,12 +115,15 @@ LRESULT CALLBACK WndDataProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 		case OnExitMenu:
 		{
 			ScannList.clear();
-			PostQuitMessage(0);
+			test.clear();
+			SendMessage(hWnd, WM_COMMAND, WM_DESTROY, 0);
+
+
 		}
 		case OnOpenFileMenu:
 		{
 			DataTable.ClearTable();
-			ScannList = LoadListFromFile(GetFileName(OFN_PATHMUSTEXIST|OFN_FILEMUSTEXIST));
+			ScannList = LoadListFromFile(GetFileName(OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST));
 			InsertFullListIntoTable(ScannList);
 			MessageBox(hWnd, L"File was open", L"Menu works", MB_OK);
 			break;
@@ -132,12 +152,15 @@ LRESULT CALLBACK WndDataProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 		case OnResetTable:
 		{
 			ScannList.clear();
+			test.clear();
 			DataTable.ClearTable();
 		}
 		break;
 		case OnStartMenu:
 		{
-			ScannList2 = new ThreadSafeQueue();
+			SetTimer(hWnd, ID_TIMER, 1500, ((TIMERPROC)NULL));
+			/*UpdateWindow(ListWindow);*/
+			//ScannList2 = new ThreadSafeQueue();
 			HMENU hMenu = GetMenu(hWnd);
 			EnableMenuItem(hMenu, OnStopMenu, MF_BYCOMMAND | MF_ENABLED);
 			EnableMenuItem(hMenu, OnStartMenu, MF_BYCOMMAND | MF_GRAYED);
@@ -145,45 +168,38 @@ LRESULT CALLBACK WndDataProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 
 			SniffingRule = true;
 			PrintRule = true;
-			for (int i = 0; i < 1; i++)
-			{
-				hThread[i] = CreateThread(NULL, 0, Sniffing, (LPVOID)(&DataTable), NULL, &ThreadId);
+				hThread = CreateThread(NULL, 0, Sniffing, (LPVOID)(&DataTable), NULL, &ThreadId);
 
-			}
-			for (int i = 0; i < THREADS_NUMBER; i++)
-			{
-				DataThreads[i] = CreateThread(NULL, 0, ThreadInsertIntoTable, (LPVOID)&DataTable, NULL, &DataThreadsId[i]);
-			}
 		}
 		break;
 		case OnStopMenu:
 		{
+			KillTimer(hWnd, ID_TIMER);
 			PrintRule = false;
-			WaitForMultipleObjects(THREADS_NUMBER, DataThreads, TRUE, 100);
+			SniffingRule = false;
+
+			//WaitForMultipleObjects(THREADS_NUMBER, DataThreads, TRUE, 100);
+			WaitForSingleObject(hThread, 1000);
+			//CloseHandle(hThread[0]);
 			HMENU hMenu = GetMenu(hWnd);
 			EnableMenuItem(hMenu, OnStopMenu, MF_BYCOMMAND | MF_GRAYED);
 			EnableMenuItem(hMenu, OnStartMenu, MF_BYCOMMAND | MF_ENABLED);
 			EnableMenuItem(hMenu, OnResetTable, MF_BYCOMMAND | MF_ENABLED);
-			SniffingRule = false;
 			break;
 		}
 		case OnBackToStart:
 		{
+			KillTimer(hWnd, ID_TIMER);
 			ScannList.clear();
+			test.clear();
 			HMENU hMenu = GetMenu(hWnd);
 			EnableMenuItem(hMenu, OnStopMenu, MF_BYCOMMAND | MF_GRAYED);
 			EnableMenuItem(hMenu, OnStartMenu, MF_BYCOMMAND | MF_ENABLED);
 			EnableMenuItem(hMenu, OnResetTable, MF_BYCOMMAND | MF_GRAYED);
 
 			SniffingRule = false;
-			WaitForMultipleObjects(1, hThread, TRUE, 100);
-
-			//WaitForSingleObject(hThread, 100);
-			for (int i = 0; i < 1; i++)
-			{
-				CloseHandle(hThread[i]);
-			}
-
+			WaitForSingleObject(hThread, 100);
+			CloseHandle(hThread);
 			ClearSocket(&sniffer);
 			sniffer = NULL;
 			DataTable.ClearTable();
@@ -195,8 +211,10 @@ LRESULT CALLBACK WndDataProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 		case SelectInterface:
 		{
 			sniffer = NULL;
+			DataTable.SetNewNumberOfRows(0);
+			test.clear();
 			DataTable.ClearTable();
-			std::string result = PrepareForSniffing(&sniffer,lParam-INTERFACE_SELECTORS);
+			std::string result = PrepareForSniffing(&sniffer, lParam - INTERFACE_SELECTORS);
 			if (result != "correct")
 			{
 				int size = MultiByteToWideChar(CP_UTF8, 0, result.c_str(), -1, NULL, 0);
@@ -227,6 +245,20 @@ LRESULT CALLBACK WndDataProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 
 		EndPaint(hWnd, &paint);
 		break;
+	case WM_TIMER:
+	{
+		if (wParam == ID_TIMER)
+		{
+			int size = test.size();
+			if (size != 0)
+			{
+				DataTable.SetNewNumberOfRows(size);
+				DataTable.DisplayData(test, size);
+			}
+
+		}
+		break;
+	}
 	case WM_CREATE:
 	{
 		AddMenuToDataWindow(hWnd);
@@ -235,24 +267,99 @@ LRESULT CALLBACK WndDataProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 	}
 	case WM_NOTIFY:
 	{
-		NMHDR* nmhdr = reinterpret_cast<NMHDR*>(lParam);
-		if (nmhdr->code == (DWORD)(NM_CLICK) && nmhdr->idFrom == ID_TABLE)
+		GetSelectedPackage(lParam);
+		//DataTable.InsertData(lParam, test);
+		LPNMHDR pNMHDR = (LPNMHDR)lParam;
+		if (pNMHDR->idFrom == ID_TABLE)
 		{
-			NMITEMACTIVATE* nmitem = reinterpret_cast<NMITEMACTIVATE*>(lParam);
-
-			int selectedIndex = nmitem->iItem;
-			std::string selectedPackage = ScannList[selectedIndex];
-
-			HWND InformWindow = FindWindow(L"InformationWindow", NULL);
-			if (InformWindow == NULL)
+			switch (pNMHDR->code)
 			{
-				HINSTANCE hInstance = GetModuleHandle(NULL);
-				InformWindow = CreateWindow(_T("InformationWindow"), _T("Package data"), WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, CW_USEDEFAULT, DEFAULT_WINDOW_DATA_WIDTH, DEFAULT_WINDOW_DATA_HEIGHT, NULL, NULL, hInstance, NULL);
+			case LVN_GETDISPINFO:
+			{
+
+				NMLVDISPINFO* pDispInfo = (NMLVDISPINFO*)lParam;
+				int index = pDispInfo->item.iItem;
+
+				if (test.size() > index)
+				{
+					switch (pDispInfo->item.iSubItem)
+					{
+					case 0:
+					{
+
+						std::string str = GetWord(test[index], 0);
+						std::wstring widestr = std::wstring(str.begin(), str.end());
+						wchar_t* output = new wchar_t[widestr.length() + 1];
+						wcscpy_s(output, widestr.length() + 1, widestr.c_str());
+						pDispInfo->item.pszText = output;
+						break;
+					}
+					case 1:
+					{
+						std::string str = GetWord(test[index], 1);
+						std::wstring widestr = std::wstring(str.begin(), str.end());
+						wchar_t* output = new wchar_t[widestr.length() + 1];
+						wcscpy_s(output, widestr.length() + 1, widestr.c_str());
+						pDispInfo->item.pszText = output;
+
+						break;
+					}
+					case 2:
+					{
+						std::string str = GetWord(test[index], 2);
+						std::wstring widestr = std::wstring(str.begin(), str.end());
+						wchar_t* output = new wchar_t[widestr.length() + 1];
+						wcscpy_s(output, widestr.length() + 1, widestr.c_str());
+						pDispInfo->item.pszText = output;
+
+						break;
+					}
+					case 3:
+					{
+						std::string str = GetWord(test[index], 3);
+						std::wstring widestr = std::wstring(str.begin(), str.end());
+						wchar_t* output = new wchar_t[widestr.length() + 1];
+						wcscpy_s(output, widestr.length() + 1, widestr.c_str());
+
+						pDispInfo->item.pszText = output;
+
+						break;
+					}
+					case 4:
+					{
+						std::string str = GetWord(test[index], 4);
+						std::wstring widestr = std::wstring(str.begin(), str.end());
+						wchar_t* output = new wchar_t[widestr.length() + 1];
+						wcscpy_s(output, widestr.length() + 1, widestr.c_str());
+
+						pDispInfo->item.pszText = output;
+
+						break;
+					}
+					case 5:
+					{
+						std::string str = GetWord(test[index], 5);
+						std::wstring widestr = std::wstring(str.begin(), str.end());
+						wchar_t* output = new wchar_t[widestr.length() + 1];
+						wcscpy_s(output, widestr.length() + 1, widestr.c_str());
+
+						pDispInfo->item.pszText = output;
+
+						break;
+					}
+					default:
+						break;
+					}
+				}
+
+
+				UpdateWindow(ListWindow);
 			}
-			ShowWindow(InformWindow, SW_SHOW);
-			SendMessage(InformWindow, WM_SHOW_PACKAGE, (WPARAM)selectedPackage.c_str(), selectedPackage.length());
-			
+			break;
+			}
 		}
+		
+
 		break;
 	}
 	case WM_SIZE:
@@ -263,12 +370,19 @@ LRESULT CALLBACK WndDataProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
 		break;
 	case WM_DESTROY:
 	{
-		SendMessage(hWnd, WM_COMMAND, OnStopMenu, 0);
+		SniffingRule = false;
+		SetNumberOfPackagesToZero();
+		KillTimer(hWnd, ID_TIMER);
+		WaitForSingleObject(hThread, 1000);
+		ScannList.clear();
+		test.clear();
+
+		DataTable.SetNewNumberOfRows(0);
+		DataTable.ClearTable();
 		ShowWindow(hWnd, SW_HIDE);
 		HWND StartWindow = FindWindow(L"StartWindow", NULL);
 		ShowWindow(StartWindow, SW_SHOW);
 		ClearSocket(&sniffer);
-		//PostQuitMessage(0);
 		break;
 	}
 	default:
@@ -289,7 +403,7 @@ void AddMenuToDataWindow(HWND window)
 	AppendMenu(fileMenu, MF_STRING, OnSaveFileMenu, L"Save");
 	AppendMenu(fileMenu, MF_MENUBARBREAK, NULL, NULL);
 	AppendMenu(fileMenu, MF_STRING, OnExitMenu, L"Exit");
-	
+
 	AppendMenu(menu, MF_POPUP, (UINT_PTR)fileMenu, L"File");
 	AppendMenu(menu, MF_STRING, OnStartMenu, L"Start");
 	AppendMenu(menu, MF_STRING, OnStopMenu, L"Stop");
@@ -302,4 +416,16 @@ void AddMenuToDataWindow(HWND window)
 
 	SetMenu(window, menu);
 	EnableMenuItem(menu, OnStopMenu, MF_BYCOMMAND | MF_GRAYED);
+}
+
+std::string GetWord(std::string str, int number)
+{
+	std::istringstream iss(str);
+	std::vector<std::string> words;
+
+	std::string word;
+	while (std::getline(iss, word, ',')) {
+		words.push_back(word);
+	}
+	return words[number];
 }

@@ -29,10 +29,7 @@ LRESULT CALLBACK WndStartProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPa
 	case WM_CREATE:
 	{
 		AddMenuToStartWindow(hWnd);
-		//hostent local = GetLocalInterfaces();
-
 		std::vector<sockaddr_in> addresses = GetAllInterfaces();
-		//buttons = CreateButtons(hWnd, local);
 		buttons = CreateButtons(hWnd, addresses);
 
 		break;
@@ -48,7 +45,6 @@ LRESULT CALLBACK WndStartProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPa
 			}
 			buttons.clear();
 			InvalidateRect(hWnd, NULL, TRUE);
-			//hostent local = GetLocalInterfaces();
 			std::vector<sockaddr_in> local = GetAllInterfaces();
 			buttons = CreateButtons(hWnd, local);
 			break;
@@ -58,6 +54,8 @@ LRESULT CALLBACK WndStartProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPa
 			if (buttonId >= INTERFACE_SELECTORS && buttonId < INTERFACE_SELECTORS + buttons.size())
 			{
 				HWND DataW = FindWindow(L"DataWindow", NULL);
+				if (DataW == NULL)
+					DataW = CreateWindow(_T("DataWindow"), _T("Sniffing"), WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, CW_USEDEFAULT, DEFAULT_WINDOW_DATA_WIDTH, DEFAULT_WINDOW_DATA_HEIGHT, NULL, NULL, GetModuleHandle(NULL), NULL);
 				ShowWindow(DataW, SW_SHOW);
 				ShowWindow(hWnd, SW_HIDE);
 				SendMessage(DataW, WM_COMMAND, SelectInterface, buttonId);
